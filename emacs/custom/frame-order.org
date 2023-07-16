@@ -1,0 +1,86 @@
+#+title: Frame Order
+
+Try to derive the frame order for emacs-mac.
+
+* Ordering
+
+We will order the displays form left to right, and the top to bottom.
+
+To order these, we need a total relation on $\mathbb{N} \times \mathbb{N}$ such
+
+
+* Discovering monitors
+
+** List monitors
+
+#+begin_src emacs-lisp :results value list :wrap example
+(--map (list (assoc 'geometry it)
+             (assoc 'name it))
+      (display-monitor-attributes-list))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+- (geometry 0 0 2048 1152)
+  (name . "Built-in Retina Display")
+- (geometry -1080 -367 1080 1920)
+  (name . "MD 20125")
+- (geometry 2048 102 1680 1050)
+  (name . "SyncMaster")
+#+end_example
+
+* Discovering frames
+
+** List frames
+
+#+begin_src emacs-lisp :results value list :wrap example
+(mapcar #'mac-frame-geometry (visible-frame-list))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+- (outer-position 0 . 0)
+  (outer-size 2048 . 1152)
+  (external-border-size 0 . 0)
+  (title-bar-size 2048 . 0)
+  (menu-bar-external . t)
+  (menu-bar-size 0 . 0)
+  (tab-bar-size 0 . 0)
+  (tool-bar-external . t)
+  (tool-bar-position . top)
+  (tool-bar-size 0 . 0)
+  (internal-border-width . 0)
+- (outer-position 2048 . 102)
+  (outer-size 1680 . 1050)
+  (external-border-size 0 . 0)
+  (title-bar-size 1680 . 0)
+  (menu-bar-external . t)
+  (menu-bar-size 0 . 0)
+  (tab-bar-size 0 . 0)
+  (tool-bar-external . t)
+  (tool-bar-position . top)
+  (tool-bar-size 0 . 0)
+  (internal-border-width . 0)
+- (outer-position -1080 . -367)
+  (outer-size 1080 . 1920)
+  (external-border-size 0 . 0)
+  (title-bar-size 1080 . 0)
+  (menu-bar-external . t)
+  (menu-bar-size 0 . 0)
+  (tab-bar-size 0 . 0)
+  (tool-bar-external . t)
+  (tool-bar-position . top)
+  (tool-bar-size 0 . 0)
+  (internal-border-width . 0)
+- (outer-position -1080 . -367)
+  (outer-size 1080 . 1920)
+  (external-border-size 0 . 0)
+  (title-bar-size 1080 . 0)
+  (menu-bar-external . t)
+  (menu-bar-size 0 . 0)
+  (tab-bar-size 0 . 0)
+  (tool-bar-external . t)
+  (tool-bar-position . top)
+  (tool-bar-size 0 . 0)
+  (internal-border-width . 0)
+#+end_example

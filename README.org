@@ -1,0 +1,177 @@
+#+title: My Setup
+
+* Overview
+
+* Initialization Steps
+** MacOS
+
+
+*** Brew...
+
+#+begin_src shell
+
+#+end_src
+
+#+begin_comment
+=/usr/local/sbin= needs to be added to the path variable.
+
+#+end_comment
+
+**** Define brew environment variables
+
+#+begin_src shell
+eval $(brew shellenv)
+#+end_src
+
+*** Node
+
+**** Install =nvm=
+
+#+begin_src shell
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+#+end_src
+
+/Source: [[https://github.com/nvm-sh/nvm#installing-and-updating][Nvm Docs: Installing and Updating]]/
+
+*** GHC/Haskell
+
+**** install =ghcup=
+
+#+begin_src shell
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+#+end_src
+
+**** cabal packages
+
+#+begin_src shell
+cabal install Agda dhall
+#+end_src
+
+*** OCaml/Opam
+
+**** Init =opam=
+
+#+begin_src shell
+opam init
+eval $(opam env --switch=default)
+#+end_src
+
+**** Install opam packages
+
+#+begin_src shell
+opam install coq merlin utop ocp-indent dune ocamlformat
+#+end_src
+
+*** Rust
+
+**** Install =rustup=
+
+#+begin_src shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+#+end_src
+
+**** Compile tools
+
+#+begin_src shell
+cargo install --features pcre2 ripgrep
+#+end_src
+
+*** Ruby
+
+
+**** Install ruby =3.2.2=.
+
+#+begin_src shell
+
+LDFLAGS="-L$HOMEBREW_PREFIX/opt/openssl@1.1/lib" \
+CPPFLAGS="-I$HOMEBREW_PREFIX/opt/openssl@1.1/include" \
+PKG_CONFIG_PATH="$HOMEBREW_PREFIX/opt/openssl@1.1/lib/pkgconfig" \
+PATH="$HOMEBREW_PREFIX/opt/openssl@1.1/bin:$PATH" \
+ruby-install -c ruby 3.2.2 -- --enable-yjit
+#+end_src
+
+**** Add =chruby= to console profiles
+#+begin_src shell
+(
+    echo " "
+    echo "# Source chruby scripts"
+    echo "source $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh"
+    echo "source $HOMEBREW_PREFIX/opt/chruby/share/chruby/auto.sh"
+    echo "chruby ruby-3.2.2"
+) | tee -a "$HOME/.bash_profile" "$HOME/.zshrc"
+
+chruby ruby-3.2.2
+#+end_src
+
+**** Install gems
+#+begin_src shell
+gem update --system
+gem install rails rubocop
+#+end_src
+
+*** Php
+
+**** Install =phpactor=...
+
+#+begin_src shell
+(
+    cd $TMPDIR
+    curl -Lo phpactor.phar https://github.com/phpactor/phpactor/releases/latest/download/phpactor.phar
+    chmod a+x phpactor.phar
+    mv phpactor.phar ~/.local/bin/phpactor
+)
+#+end_src
+
+
+*** direnv
+
+**** TODO Install direnv
+
+**** Add =bash= hook
+
+#+begin_src shell
+(
+  echo 'eval "$(direnv hook bash)"'
+) >> "$HOME/.bashrc"
+#+end_src
+
+**** Add =zsh= hook
+
+#+begin_src shell
+(
+  echo 'eval "$(direnv hook zsh)"'
+) >> "$HOME/.zshrc"
+#+end_src
+
+/Source: [[https://direnv.net/docs/hook.html#zsh][Direnv Documentation]]/
+
+*** Emacs
+
+**** Install Emacs
+
+#+begin_src shell
+brew install git coreutils fd
+xcode-select --install
+
+brew tap railwaycat/emacsmacport
+brew install emacs-mac \
+    --with-starter \
+    --with-mac-metal \
+    --with-native-compilation \
+    --with-xwidgets \
+    --with-dbus \
+    --with-imagemagick \
+    --with-librsvg
+
+#+end_src
+
+/Source: [[https://github.com/doomemacs/doomemacs/blob/master/docs/getting_started.org#on-macos][Doom Emacs docs: Getting Started]]/
+
+**** Install Doom Emacs
+
+#+begin_src shell
+git clone https://github.com/hlissner/doom-emacs ~/.emacs.d
+~/.emacs.d/bin doom install
+#+end_src
+
+/Source: [[https://github.com/doomemacs/doomemacs/blob/master/docs/getting_started.org#on-macos][Doom Emacs docs: Getting Started]]/
