@@ -2,6 +2,19 @@
 
 * Overview
 
+* Environment Variables
+
+** shells
+
+*** =brew=
+
+- =HOMEBREW_PREFIX=
+- =HOMEBREW_CELLAR=
+- =HOMEBREW_REPOSITORY=
+- =PATH=
+- =MANPATH=
+- =INFOPATH=
+
 * Initialization Steps
 ** MacOS
 
@@ -12,10 +25,7 @@
 
 #+end_src
 
-#+begin_comment
 =/usr/local/sbin= needs to be added to the path variable.
-
-#+end_comment
 
 **** Define brew environment variables
 
@@ -170,8 +180,24 @@ brew install emacs-mac \
 **** Install Doom Emacs
 
 #+begin_src shell
-git clone https://github.com/hlissner/doom-emacs ~/.emacs.d
-~/.emacs.d/bin doom install
+ln ~/.myconf/doomemacs $HOME/.emacs.d
+ln ~/.myconf/emacs/doom $HOME/.doom.d
+$HOME/.emacs.d/bin doom install --no-config --install --fonts --doomdir "$HOME/.doom.d" --emacsdir "$HOME/.emacs.d"
 #+end_src
 
 /Source: [[https://github.com/doomemacs/doomemacs/blob/master/docs/getting_started.org#on-macos][Doom Emacs docs: Getting Started]]/
+
+
+
+
+
+
+* References
+
+** Shell startup scripts
+
+- [[https://blog.flowblok.id.au/2013-02/shell-startup-scripts.html]]
+
+** Dotfile repositories
+
+- [[https://dotfiles.github.io][Unofficial guide to dotfiles on GitHub.]]

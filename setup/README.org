@@ -1,0 +1,211 @@
+#+title: Setup
+#+description: Describes the steps to set up a new environment.
+
+
+* Environments
+
+** MacOS
+
+*** Environment variables
+
+#+begin_src shell :results ignore
+
+# THIS REPOSITORY
+export MYCONFDIR="$HOME/.myconf"  # Directory of this repository
+export HOMEBREW_BUNDLE_FILE="$HOME/.Brewfile" #File containing all brew dependencies
+
+# EMACS/DOOM EMACS
+export EMACSDIR="$HOME/.emacs.d" # Directory where emacs lives
+export DOOMDIR="$HOME/.doom.d"  # Directory where the doom configuration lives
+#+end_src
+
+* Helper scripts
+
+** TODO Initialize path helper
+
+* Linking
+
+*** Brew
+
+#+begin_src shell :results ignore
+ln -s "$MYCONFDIR/dotfiles/.Brewfile" "$HOMEBREW_BUNDLE_FILE"
+#+end_src
+
+*** Emacs
+
+#+begin_src shell :results ignore
+ln -s "$MYCONFDIR/doomemacs" "$EMACSDIR"
+ln -s "$MYCONFDIR/emacs/doom" "$DOOMDIR"
+#+end_src
+
+* Dependencies
+
+** Dependency Managers
+
+*** Volta
+
+**** Install =volta=
+
+:PROPERTIES:
+:idempotent: t
+#+begin_src shell
+curl https://get.volta.sh | bash -s -- --skip-setup
+#+end_src
+
+**** Init environment variables
+
+#+begin_src shell
+export VOLTA_HOME=${VOLTA_HOME-"$HOME/.volta"}
+export PATH="$VOLTA_HOME/bin:$PATH"
+#+end_src
+
+**** Init completions
+
+#+begin_src shell
+if [ type volta 2> /dev/null ]; then
+    volta completions
+fi
+#+end_src
+
+**** Install latest stable version of node
+
+#+begin_src shell
+volta install node pnpm yarn
+#+end_src
+
+** Dependencies
+
+*** =brew=
+- editorconfig
+
+**** Install command
+#+begin_src shell
+brew bundle install --global --no-lock
+#+end_src
+
+**** Cleanup command
+#+begin_src shell
+brew bundle cleanup --force
+#+end_src
+
+*** =npm=
+
+**** LSPs
+ dockerfile-language-server-nodejs
+ @ansible/ansible-language-server
+ bash-language-server
+ vscode-langservers-extracted
+ @elm-tooling/elm-language-server
+ emmet-ls
+ graphql-language-service-cli
+ typescript-language-server
+ purescript-language-server
+ @volar/vue-language-server
+ yaml-language-server
+
+
+**** Toolchain
+- typescript
+- eslint
+- purescript
+- spago
+- prettier
+- @prettier/plugin-php
+- prettier-plugin-toml
+- purty
+- stylelint
+- js-beautify
+- node-cljfmt
+- marked
+
+*** =cmake=
+
+*** =cabal=
+
+- Agda
+- dhall
+- dhall-lsp-server
+- cabal-fmt
+- brittany
+
+*** =rustup=
+- add rustfmt
+
+*** =cargo=
+- fd
+
+- ~cargo install --git https://github.com/latex-lsp/texlab.git~
+- ~cargo install taplo-cli --features lsp~
+
+*** =gems=
+
+*** =pack=
+
+- ~pack install-app lsp~
+
+*** =pip=
+
+- ~pip install -U nginx-language-server~
+- ~pip install hdl-checker --upgrade~
+- ~pip isntall cmake_format~
+- black
+- isort
+- pipenv
+- nose
+- pyflakes
+- pytest
+
+*** =opam=
+
+- coq
+- merlin
+- utop
+- ocp-indent
+- ocamlformat
+- ocaml-lsp-server
+
+*** =go=
+
+- github.com/klauspost/asmfmt/cmd/asmfmt@latest
+- github.com/jessfraz/dockfmt
+- golang.org/x/tools/gopls@latest
+- github.com/fatih/gomodifytags@latest
+- github.com/cweill/gotests/...
+- github.com/motemen/gore/cmd/gore
+- github.com/mdempsky/gocode
+- golang.org/x/tools/cmd/guru
+
+* Initialization
+
+** Brew
+
+*** Install bundle dependencies
+
+#+begin_src shell
+brew bundle install --global --no-lock
+#+end_src
+
+** Emacs
+
+*** Setup doom-emacs configuration
+
+#+begin_src shell :results ignore
+$EMACSDIR/bin/doom install --no-config \
+                           --install \
+                           --fonts \
+                           --doomdir $DOOMDIR \
+                           --emacsdir $EMACSDIR
+
+$EMACSDIR/bin/doom sync -ec \
+                        --doomdir $DOOMDIR \
+                        --emacsdir $EMACSDIR
+#+end_src
+
+*** Install language servers
+
+#+begin_src emacs-lisp :results none
+(lsp-install-server nil 'elixir-ls)
+
+(lsp-install-server nil 'eslint)
+#+end_src
+

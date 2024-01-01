@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: import Data.Text.Lazy
+# key: <TL
+# group: imports
+# condition: (looking-back "^<TL" nil)
+# --
+import qualified Data.Text.Lazy (Text as Lazy) as Text
+import qualified Data.Text.Lazy as Text.Lazy

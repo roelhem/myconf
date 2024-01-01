@@ -1,26 +1,35 @@
 #!/usr/bin/env zsh
 
-
 # Register direnv hook
-if [ type direnv &> /dev/null ]; then
-    eval "$(direnv hook zsh)"
-fi
-
-# Get the GHC-up Environment
-if [ -f "${GHCUP_INSTALL_BASE_PREFIX:=$HOME}/.ghcup/env" ]; then
-    source "${GHCUP_INSTALL_BASE_PREFIX:=$HOME}/.ghcup/env"
-fi
+# eval "$(direnv hook zsh)"
 
 # Opam configuration
-[[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh"  > /dev/null 2> /dev/null
+# [[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh" >/dev/null 2>/dev/null
 
+# Emacs
+export EMACS_HOME="$HOME/.emacs.d"
+export VOLTA_HOME="$HOME/.volta"
+export PYENV_ROOT="$HOME/.pyenv"
+export GO_HOME="$HOME/go"
+export DOTNET_HOME="$HOME/.dotnet"
+export MYCONF_HOME="$HOME/.myconf"
+export CABAL_HOME="$HOME/.cabal"
+export GHCUP_HOME="$HOME/.ghcup"
+export CARGO_HOME="$HOME/.cargo"
 
-# Get the NVM setup.
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+export PATH="$MYCONF_HOME/bin:$CABAL_HOME/bin:$GHCUP_HOME/bin:$CARGO_HOME/bin:$VOLTA_HOME/bin:$PYENV_ROOT/bin:$GO_HOME/bin:$DOTNET_HOME/tools:$EMACS_HOME/bin${PATH+:$PATH}"
+export PATH="/usr/local/opt/bison/bin:/usr/local/opt/libiconv/bin:$PATH"
 
-# Setup chruby scripts
-source $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh
-source $HOMEBREW_PREFIX/opt/chruby/share/chruby/auto.sh
-chruby ruby-3.2.2
+export LDFLAGS="-L/usr/local/opt/libiconv/lib $LDFLAGS"
+export CPPFLAGS="-I/usr/local/opt/libiconv/include $CPPFLAGS"
+# Get the pyenv setup
+# eval "$(pyenv init -)"
+
+# Source chruby scripts
+# source $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh
+# source $HOMEBREW_PREFIX/opt/chruby/share/chruby/auto.sh
+# chruby ruby-3.2.2
+
+# Get luaver setup
+# [ -s $HOME/.luaver/luaver ] && . $HOME/.luaver/luaver
+# [ -s $HOME/.luaver/completions/luaver.bash ] && . ~/.luaver/completions.zsh

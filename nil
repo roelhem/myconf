@@ -1,0 +1,8 @@
+;; Enable LSP/Eglot mode
+
+;; This uses the ~lsp!~ function from doom-emacs, which automatically sets the lsp-client to ~lsp~ or ~eglot~, depending on the ~init.el~ file.
+
+
+;; [[file:config.org::*Enable LSP/Eglot mode][Enable LSP/Eglot mode:1]]
+(add-hook 'vue-mode-hook #'lsp!)
+;; Enable LSP/Eglot mode:1 ends here

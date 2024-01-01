@@ -1,0 +1,10 @@
+#!/usr/bin/env zsh
+set -e
+
+# SYNC
+
+echo "Tangle configuration..."
+org-tangle ~/.myconf/config.org
+
+echo "Doom-sync..."
+doom sync

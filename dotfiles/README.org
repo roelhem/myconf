@@ -1,0 +1,101 @@
+#+title: Dotfiles
+
+* References
+
+
+* Environments
+
+
+
+* Shell Startup
+
+** Init =brew= environment variables
+
+** Initialize =volta= environment variables
+
+Should always run.
+
+*** =sh=, =bash= and =zsh=;
+
+#+begin_src shell
+export VOLTA_HOME=${VOLTA_HOME-"$HOME/.volta"}
+export PATH="$VOLTA_HOME/bin:$PATH"
+#+end_src
+
+
+** Initialize =ghcup= environment variables
+
+For =sh=, =bash= and =zsh=:
+
+:PROPERTIES:
+:initialize_environments: always
+
+#+begin_src shell
+if [ -f "${GHCUP_INSTALL_BASE_PREFIX:=$HOME}/.ghcup/env" ]; then
+    . "${GHCUP_INSTALL_BASE_PREFIX:=$HOME}/.ghcup/env"
+fi
+#+end_src
+
+** Initialize =opam= variables
+
+Should always run.
+
+*** =sh= and =bash=
+
+#+begin_src shell
+[[ ! -r "$HOME/.opam/opam-init/init.sh" ]] || source "$HOME/.opam/opam-init/init.sh"  > /dev/null 2> /dev/null
+#+end_src
+
+*** =zsh=
+
+#+begin_src shell
+[[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || source "$HOME/.opam/opam-init/init.zsh"  > /dev/null 2> /dev/null
+#+end_src
+
+*** =fish=
+
+#+begin_src shell
+[[ ! -r "$HOME/.opam/opam-init/init.fish" ]] || source "$HOME/.opam/opam-init/init.fish"  > /dev/null 2> /dev/null
+#+end_src
+
+
+** Init direnv hook
+
+Should only run in interactive environments!
+
+*** =bash=
+
+#+begin_src bash
+if [ type direnv &> /dev/null ]; then
+    eval "$(direnv hook bash)"
+fi
+#+end_src
+
+*** =zsh=
+
+#+begin_src sh
+if [ type direnv &> /dev/null ]; then
+    eval "$(direnv hook zsh)"
+fi
+#+end_src
+
+
+*** =fish=
+
+#+begin_src fish
+direnv hook fish | source
+#+end_src
+
+*** =tcsh=
+
+#+begin_src shell
+eval `direnv hook tcsh`
+#+end_src
+
+*** =elvish=
+
+NOTE: This uses =dotfiles/.elvish/lib/direnv.elv=!
+
+#+begin_src shell
+use direnv
+#+end_src

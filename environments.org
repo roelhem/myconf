@@ -1,0 +1,35 @@
+#+title: Development Environments
+
+* MacOS
+
+** PHP Extension Development Environment
+
+*** Installation
+
+The following command will compile php with debug enabled.
+
+#+begin_src zsh
+
+# Goto workspace directory.
+export WORKSPACE_DIR=${WORKSPACE_DIR:~$HOME/workspace}
+cd $WORKSPACE_DIR
+
+# Prepare path.
+export PATH="/usr/local/opt/bison/bin:$PATH"
+
+# Clone PHP Source code
+git clone https://github.com/php/php-src.git
+cd php-src
+
+# Configure php
+./buildconf --force
+./configure --enable-debug \
+    --prefix=$HOME/php-bin/DEBUG \
+    --with-config-file-path/php-bin/DEBUG/etc \
+    --with-iconv=$(brew --prefix libiconv) # TODO: Add items from configure command
+
+# Compile and install php
+make -j4
+make install
+cd ..
+#+end_src

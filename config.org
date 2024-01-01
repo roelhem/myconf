@@ -1,0 +1,1339 @@
+#+title: Mijn Configuratie
+#+author: Roel Hemerik
+#+email: myconf@roelweb.com
+#+latex_class: book
+#+latex_header_extra: \usepackage[autooneside=false,automark,headsepline]{scrlayer-scrpage}
+#+property: header-args:emacs-lisp
+#+property: header-args:elisp :results replace :export code
+#+property: header-args:shell :tangle "setup.sh"
+#+property: header-args :tangle no :mkdirp yes :comments both :results silent :eval no-export
+
+#+startup: fold
+
+* Using this configuration
+
+** Reload config
+
+#+begin_src shell
+org-tangle ~/.myconf/config.org && doom sync
+#+end_src
+
+* Doom Emacs
+
+For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configure emacs.
+
+** Packages
+:PROPERTIES:
+:header-args:elisp: :tangle "emacs/doom/packages.el"
+:END:
+
+#+begin_src elisp :comments none
+;;; $DOOMDIR/packages.el -*- lexical-binding: t; -*-
+#+end_src
+
+*** Enabling packages
+
+#+begin_src elisp
+(package! homebrew-mode)
+
+(package! company-nginx)
+(package! nginx-mode)
+(package! x509-mode)
+
+(package! tidal)
+(package! xkcd)
+
+(package! poly-markdown)
+(package! polymode)
+(package! ob-fsharp)
+
+(package! eglot-fsharp)
+
+(package! mmm-mode)
+
+(package! swagg)
+
+(package! kurecolor)
+#+end_src
+
+*** Disabling default packages
+
+#+begin_src elisp
+(package! evil-escape :disable t)
+#+end_src
+
+** Configuration
+:PROPERTIES:
+:header-args:elisp: :tangle "emacs/doom/config.el"
+:END:
+
+This section defines the ~config.el~ file.
+
+#+begin_src elisp :comments none
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+#+end_src
+
+| Macro            | Description                                                   |
+|------------------+---------------------------------------------------------------|
+| ~load!~          | Load an external *.el file relative to the configuration.     |
+| ~use-package!~   | To configure packages.                                        |
+| ~after!~         | Running code after a package has loaded.                      |
+| ~add-load-path!~ | Adding directories to the ~load-path~, relative to this file. |
+| ~map!~           | Adding bindings.                                              |
+
+*** Personal Information
+
+#+begin_src elisp
+(setq user-full-name "Roel Hemerik"
+      user-mail-address "roel@shared.nl")
+#+end_src
+
+*** Tuning
+
+This section concerns properties that
+
+**** Garbage Collection
+
+#+begin_src elisp
+(after! gcmh
+  (setq gcmh-high-cons-threshold (* 64 1024 1024)))
+#+end_src
+
+**** LSP
+
+#+begin_src elisp
+(setq read-process-output-max  (* 1024 1024)
+      lsp-file-watch-threshold 2000)
+#+end_src
+
+*** Tools and Utils
+
+**** Settings (~myconf~)
+
+Some utility functions to manage this configuration. Might be a good idea to migrate this to a separate package in the future.
+
+***** Configuration Variables
+
+Here, define the configuration variables for the function we define later on.
+
+#+begin_src elisp
+(defconst myconf-config-org-file "~/.myconf/config.org"
+  "The location of the config literal file.")
+
+(defvar myconf-open-config-in-other-frame nil
+  "Whether to open the config literal file in a new frame")
+
+(defvar myconf-config-frame-name "Settings"
+  "The name of the frame in which the settings should be opened.
+Only has an effect of ~myconf-open-config-in-other-frame~ is non-nil")
+
+(defvar myconf-config-workspace-name "*settings*"
+  "The name of the workspace in which the settings will be opened.")
+#+end_src
+
+***** Open Settings
+
+These functions allow me to quickly open this configuration from anywhere.
+
+#+begin_src elisp
+(defun myconf-open-config-org ()
+  "Open the myconf literal file."
+  (interactive)
+  (if myconf-open-config-in-other-frame
+      (let ((frame (find-file-other-frame myconf-config-org-file)))
+        (modify-frame-parameters nil `((fullscreen . fullscreen)
+                                       (name . "Settings"))))
+      (+workspace-switch myconf-config-workspace-name t)
+      (find-file myconf-config-org-file)))
+#+end_src
+
+Bind this to the workspace prefix.
+
+#+begin_src elisp
+(map! :leader
+      :desc "Settings Workspace" "TAB ," #'myconf-open-config-org)
+#+end_src
+
+On MacOS, it should open the configuration just like any other application.
+
+#+begin_src elisp
+(map! "s-," #'myconf-open-config-org)
+#+end_src
+
+**** Uuid
+
+Inspired by:
+
+#+begin_src elisp
+(defun xah-insert-random-uuid ()
+  "Insert a UUID.
+This commands calls “uuidgen” on MacOS, Linux, and calls PowelShell on Microsoft Windows.
+URL `http://xahlee.info/emacs/emacs/elisp_generate_uuid.html'
+Version: 2020-06-04 2023-05-13"
+  (interactive)
+  (cond
+   ((eq system-type 'windows-nt)
+    (shell-command "pwsh.exe -Command [guid]::NewGuid().toString()" t))
+   ((eq system-type 'darwin) ; Mac
+    (shell-command "uuidgen" t))
+   ((eq system-type 'gnu/linux)
+    (shell-command "uuidgen" t))
+   (t
+    ;; code here by Christopher Wellons, 2011-11-18.
+    ;; and editted Hideki Saito further to generate all valid variants for "N" in xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx format.
+    (let ((xstr (md5 (format "%s%s%s%s%s%s%s%s%s%s"
+                              (user-uid)
+                              (emacs-pid)
+                              (system-name)
+                              (user-full-name)
+                              (current-time)
+                              (emacs-uptime)
+                              (garbage-collect)
+                              (buffer-string)
+                              (random)
+                              (recent-keys)))))
+      (insert (format "%s-%s-4%s-%s%s-%s"
+                      (substring xstr 0 8)
+                      (substring xstr 8 12)
+                      (substring xstr 13 16)
+                      (format "%x" (+ 8 (random 4)))
+                      (substring xstr 17 20)
+                      (substring xstr 20 32)))))))
+#+end_src
+
+But I need it also in lowercase.
+
+#+begin_src elisp
+(defun roelhem/random-uuid ()
+  (substring (shell-command-to-string "uuidgen") 0 -1))
+
+(defun roelhem/random-lowercase-uuid ()
+  (downcase (roelhem/random-uuid)))
+
+(defun roelhem/insert-random-uuid-lowercase ()
+  "Insert a lowercase UUID"
+  (interactive)
+  (insert (roelhem/random-lowercase-uuid)))
+#+end_src
+
+**** JWT-tokens
+
+***** Get JWT Body
+
+#+begin_src elisp
+(defun jwt-parse-string (value &rest args)
+  (let* ((parts (string-split value "\\."))
+         (nth-decoded (lambda (n)
+                        (apply 'json-parse-string
+                         (base64-decode-string (nth n parts) t)
+                         :object-type 'plist
+                         :array-type 'list
+                         args))))
+    (append (mapcar nth-decoded '(0 1)) (nth 2 parts))))
+#+end_src
+
+**** Azure
+
+***** Login
+
+#+begin_src elisp
+(defun az-login ()
+  (shell-command "az login --allow-no-subscriptions"))
+#+end_src
+
+***** Getting Microsoft Graph Access Token
+
+#+begin_src elisp
+(defun ms-graph--get-access-token (&rest scopes)
+  "Returns a new ms-graph access token."
+  (let ((command "az account get-access-token --resource-type ms-graph --query accessToken --output tsv ")
+        (scope-str (string-join (cons "--scope" scopes) " ")))
+    (substring (shell-command-to-string (concat command scope-str)) 0 -1)))
+#+end_src
+
+**** Swagg
+
+This is an amazing package by [[https://isamert.net][Isa Mert Gurbuz]] that works as a swagger ui inside emacs.
+
+***** Setup
+
+#+begin_src elisp
+(use-package! swagg
+  :commands (swagg-request
+             swagg-display-headers
+             swagg-request-with-rest-block
+             swagg-invalidate-cache))
+#+end_src
+
+***** APIs
+
+#+begin_src elisp
+(setq
+ swagg-definitions
+ '((:name "GitHub"
+    :json "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
+    :base "https://api.github.com")
+   (:name "Azure AppConfiguration [stable v1.0]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/appconfiguration/data-plane/Microsoft.AppConfiguration/stable/1.0/appconfiguration.json")
+   (:name "Azure WebPubSub [stable 2023-07-01]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/webpubsub/data-plane/WebPubSub/stable/2023-07-01/webpubsub.json")
+   (:name "Azure KeyVault BackupRestore [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/backuprestore.json")
+   (:name "Azure KeyVault Certificates [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/certificates.json")
+   (:name "Azure KeyVault Common [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/common.json")
+   (:name "Azure KeyVault Keys [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/keys.json")
+   (:name "Azure KeyVault RBAC [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/rbac.json")
+   (:name "Azure KeyVault Secrets [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/secrets.json")
+   (:name "Azure KeyVault SecurityDomain [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/securitydomain.json")
+   (:name "Azure KeyVault Settings [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/settings.json")
+   (:name "Azure KeyVault Storage [stable v7.4]"
+    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/storage.json")))
+#+end_src
+
+Sources:
+ - [[https://github.com/Azure/azure-rest-api-specs][Azure REST-API Specs GitHub-repository]]
+
+*** Appearance
+
+This section configures how emacs looks.
+
+**** Theme
+
+This sets the default theme for emacs.
+
+#+begin_src elisp
+(setq doom-theme 'one-dark)
+#+end_src
+
+To load another theme, use the ~load-theme~ function (=SPC h t=).
+
+**** Colors
+
+I am missing some colors!
+
+***** One Dark
+
+These are the colors of the original OneDark theme from Atom which I am used to.
+
+#+begin_src elisp
+(defconst one-dark-colors
+  '(
+    (coral . "#e06c75")
+    (vivid-coral . "#ef596f")
+    (dark . "#5c6370")
+    (deep . "#23272e")
+    (invalid . "#ffffff")
+    (light-dark . "#7f848e")
+    (light-white . "#abb2bf")
+    (malibu . "#61afef")
+    (deep-red . "#be5046")
+    (black . "#282c34")
+    (white . "#abb2bf")
+    (light-green . "#afc3a1")
+    (green . "#98c379")
+    (dim-green . "#626e59")
+    (vivid-green . "#89ca78")
+    (error-red . "#f44747")
+    (light-red . "#e06c75")
+    (dark-red . "#be5046")
+    (chalky . "#e5c07b")
+    (light-yellow . "#e5c07b")
+    (wiskey . "#d19a66")
+    (dark-yellow . "#d19a66")
+    (vivid-fountain-blue . "#2bbac5")
+    (fountain-blue . "#56b6c2")
+    (blue . "#61afef")
+    (purple . "#c678dd")
+    (magenta . "#c678dd")
+    (vivid-purple . "#d55fde")
+    (pink . "#c44482")
+    (cyan . "#56b6c2")
+    (gutter-gray . "#4b5263")
+    (comment-gray . "#5c6370")))
+#+end_src
+
+The following function makes it easier to access these colors:
+
+#+begin_src elisp
+(defun one-dark-color (name)
+  "Selects one of the original one-dark colors with name NAME."
+  (alist-get name one-dark-colors))
+#+end_src
+
+**** Font faces
+
+***** Fonts
+
+Fonts can be set using the following variables. /Source: The default emacs =config.el= file./
+
+| variable                   | description                                                        |
+|----------------------------+--------------------------------------------------------------------|
+| ~doom-font~                | The primary font to use.                                           |
+| ~doom-variable-pitch-font~ | a non-monospace font (where applicable)                            |
+| ~doom-big-font~            | Used for ~doom-big-font-mode~ (during presentations or streaming). |
+| ~doom-unicode-font~        | To show unicode glyphs                                             |
+| ~doom-serif-font~          | For the ~fixed-pitch-serif~ face.                                  |
+
+
+#+begin_src elisp
+(setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'regular)
+      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 15))
+#+end_src
+
+Using ~s-=~ and ~s--~, changes the font size (default from /doom-emacs/). Lets make the step
+as small as possible.
+
+#+begin_src elisp
+(setq doom-font-increment 1)
+#+end_src
+
+***** TreeSitter Highlighting
+
+First some helper functions to make it easier to define extra tree-sitter faces.
+
+#+begin_src elisp
+(defun tshelper--get-captures (queries)
+  "Returns a list of all unique capture symbols in QUERIES."
+  (-distinct
+   (cl-loop for query being the elements of queries
+            append (--filter (and (symbolp it) (string-prefix-p "@" (symbol-name it)))
+                             (-flatten query)))))
+
+(defun tshelper--declare-capture-faces (queries &optional fmt)
+  "Declares tree-sitter-hl-face faces for each symbol in ITEMS.
+
+Optinally use FMT to specify the format of the face symbol names."
+  (let ((fmt (or fmt "tree-sitter-hl-face:%s"))
+        (items (tshelper--get-captures queries)))
+   (cl-loop for item in items
+            collect (let* ((name (symbol-name item))
+                           (symb (intern (format fmt (string-remove-prefix "@" name)))))
+                     (custom-declare-face symb nil
+                      (format "Face for capture %s" name))))))
+
+(defun tshelper-add-patterns (lang aftr queries)
+  "Adds tree sitter highlight patterns defined by QUERIES to language LANG."
+  (tree-sitter-hl-add-patterns lang queries)
+  (with-eval-after-load aftr
+   (tshelper--declare-capture-faces queries)))
+#+end_src
+
+Then add some faces that are missing anyway
+
+#+begin_src elisp
+(defface tree-sitter-hl-face:character nil nil)
+#+end_src
+
+**** Formatting
+
+***** Glyphs
+
+The characters/strings used to indicate things in emacs.
+
+#+begin_src elisp
+(setq truncate-string-ellipsis "…")
+#+end_src
+
+***** Date/Time
+
+#+begin_src elisp
+(display-time-mode 1) ; Enables the display-time minor-mode.
+#+end_src
+
+*** Editor
+
+Concerns text-buffers and ~evil-mode~.
+
+**** Line numbers
+
+This determines the style of line numbers in the editor.
+
+#+begin_src elisp
+(setq display-line-numbers-type 'relative)
+#+end_src
+
+The allowed values:
+
+| Value       | Description           |
+|-------------+-----------------------|
+| ~nil~       | No line numbers       |
+| ~t~         | Normal line numbers.  |
+| ~'relative~ | Relative line numbers |
+
+**** Behaviour
+
+#+begin_src elisp
+(setq undo-limit (* 64 1024 1024)
+      auto-save-default t)
+#+end_src
+
+**** Evil
+
+#+begin_src elisp
+(setq evil-kill-on-visual-paste nil
+      evil-respect-visual-line-mode t
+      evil-ex-substitute-global t)
+#+end_src
+
+*** Key-bindings
+
+This section configures my custom key-bindings.
+
+**** Leader
+
+Keybinds on the leader (~SPC~).
+
+***** Insert (~SPC g~)
+
+#+begin_src elisp
+(map! :leader
+      :prefix "i"
+      :desc "Uppercase UUID" "G" #'xah-insert-random-uuid
+      :desc "Lowercase UUID" "g" #'roelhem/insert-random-uuid-lowercase)
+#+end_src
+
+***** Explain (~SPC e~)
+
+****** Flycheck
+
+#+begin_src elisp
+(after! flycheck
+  (map! :leader
+        :prefix ("e" . "explain")
+        :desc "Error at point" "e" #'flycheck-explain-error-at-point
+        :desc "Error list" "E" #'list-flycheck-errors))
+#+end_src
+
+****** LSP
+
+#+begin_src elisp
+(after! lsp
+  (map! :leader
+        :prefix "e"
+        :desc "Thing at point" "x" #'lsp-describe-thing-at-point
+        :desc "LSP session" "L" #'lsp-describe-session))
+#+end_src
+
+***** Toggle (~SPC t~)
+
+****** TreeSitter Debug
+
+Explain the syntax as seen by ~tree-sitter~.
+
+#+begin_src elisp
+(map! :leader
+      :prefix "t"
+      :desc "TreeSitter Debug Mode" "t" #'tree-sitter-debug-mode)
+#+end_src
+
+***** Code (~SPC c~)
+
+****** TreeSitter Query
+
+#+begin_src elisp
+(map! :leader
+      :prefix "c"
+      "q" #'tree-sitter-query-builder)
+#+end_src
+
+***** Frames (~SPC F~)
+
+Add a frames section to the leader.
+
+#+begin_src elisp
+(map! :leader
+      :prefix ("F" . "frame")
+      :desc "Clear frame" "c" #'doom/delete-frame-with-prompt
+      :desc "Undelete frame" "u" #'undelete-frame)
+#+end_src
+
+**** Evil states
+
+***** Page scrolling
+
+I like ~h,j,k,l~! also ~s-h,s-j,s-k,s-l~ seem to be unused, so lets bind them so that they handle scrolling large buffers!
+
+#+begin_src elisp
+(map! :n "s-h" #'evil-scroll-left
+      :n "s-j" #'evil-scroll-down
+      :n "s-k" #'evil-scroll-up
+      :n "s-l" #'evil-scroll-left)
+#+end_src
+
+**** Which-key
+
+Configure the helpers for key-bindings
+
+***** Behaviour
+
+#+begin_src elisp
+(setq which-key-idle-delay 0.5
+      which-key-allow-multiple-replacements t
+      which-key-show-operator-state-map t
+      which-key-use-C-h-commands nil
+      which-key-show-remaining-keys t)
+#+end_src
+
+***** TODO Scrollable which-key pages
+
+This might be do-able using ~which-key-show-next-page-no-cycle~ and ~which-key-show-previous-page-no-cycle~
+
+***** Key replacements
+
+Make the hints from =which-key= more readable by replacing common prefixes by symbols.
+
+#+begin_src elisp
+(after! which-key
+  (pushnew! which-key-replacement-alist
+            '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "◂\\1"))
+            '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1")))
+  (which-key-add-key-based-replacements
+    "g z" "multiple-cursors"))
+#+end_src
+
+*** Frames
+
+**** MacOS Fullscreen
+
+By default, emacs uses a full-screen mode that works different from how other application-windows will be put in full-screen. It was set like this as most people didn't like the standard window-manager of MacOS.
+
+Problem is, I do like it and I do not want to to deal with strange full-screen windows that block things behind them. Also, I like emacs to open in full-screen by default.
+
+#+begin_src elisp
+(add-to-list 'initial-frame-alist '(fullscreen . fullscreen))
+#+end_src
+
+And after I toggled full-screen, I want the initial window to be as large as possible.
+
+#+begin_src elisp
+(add-to-list 'initial-frame-alist '(fullscreen-restore . maximized))
+#+end_src
+
+To ensure that emacs uses the MacOS-native way of fullscreen on toggle, I overwrite the =toggle-frame-fullscreen= function.
+
+#+begin_src elisp
+(defun toggle-frame-fullscreen (&optional frame)
+  "Custom toggle-frame-fullscreen that works better with MacOS in my opinion"
+  (interactive)
+  (let ((fullscreen (frame-parameter frame 'fullscreen)))
+    (if (memq fullscreen '(fullscreen fullboth))
+	(let ((fullscreen-restore (frame-parameter frame 'fullscreen-restore)))
+	  (if (memq fullscreen-restore '(maximized fullheight fullwidth))
+	      (set-frame-parameter frame 'fullscreen fullscreen-restore)
+	    (set-frame-parameter frame 'fullscreen nil)))
+      (modify-frame-parameters
+       frame `((fullscreen . fullscreen)
+               (fullscreen-restore . ,fullscreen))))))
+#+end_src
+
+*** Filesystem
+
+**** Default directories
+
+#+begin_src elisp
+(setq org-directory "~/org/")
+#+end_src
+
+
+**** Project files
+
+#+begin_src elisp
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.nx\\'")
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]dist\\'")
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.postman\\'")
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.spago\\'")
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.phpunit.cache\\'"))
+#+end_src
+
+*** Languages
+
+This section concerns the configuration specific to certain programming languages.
+
+**** Haskell
+
+My favorite language!
+
+***** TreeSitter
+
+****** Highlighting Patterns
+
+#+begin_src elisp
+(tshelper-add-patterns 'haskell 'haskell-mode
+   [((comment) @haddock.multiline
+     (.match? @haddock.multiline "^\\{-[|^](?s:.*)-}"))
+
+    ((comment) @comment)
+    ((pragma) @pragma)
+
+    ((label) @haskell.label)
+
+    (quasiquote [(quasiquote_start) (quasiquote_bar) "|]"] @haskell.qq.punctuation)
+    ((quoter) @haskell.qq.quoter)
+    ((quasiquote_body) @haskell.qq.body)
+
+    (exp_type_application \. ("@") @haskell.type.application.operator)
+
+    (type_literal (con_list) @haskell.list.type)
+    (exp_literal (con_list) @haskell.list.constructor)
+    (pat_literal (con_list) @haskell.list.constructor)
+
+    (type_literal (con_unit) @haskell.unit.type)
+    (exp_literal (con_unit) @haskell.unit.constructor)
+    (pat_literal (con_unit) @haskell.unit.constructor)
+
+    (type_list ["[" "]"] @haskell.list.type.punctuation)
+
+    (type_tuple [(comma) "(" ")"] @haskell.tuple.type.punctuation)
+
+    (["{" "}" "(" ")" "[" "]"] @punctuation.bracket)
+
+    ((type) @type)
+
+    ((type_variable) @type.argument)
+
+    ((strict_type) @type.strict)])
+#+end_src
+
+****** Highlighting Overrides
+
+First, define a variable that holds the mappings of the capture names to the faces.
+
+#+begin_src elisp
+(defvar +haskell-tree-sitter-hl-face-mapping nil
+  "Holds the haskell specific mappings from capture names to faces.")
+#+end_src
+
+Also define a function that returns the associated type face symbol. Then, bind this to the ~haskell-mode~ local ~tree-sitter-hl-face-mapping-function~.
+
+#+begin_src elisp
+(defun +haskell-tree-sitter-hl-face-custom-get (cap)
+  "Returns the type face symbol associated with the capture group
+CAP in the mapping ~+haskell-tree-sitter-hl-face-mapping~."
+  (alist-get cap +haskell-tree-sitter-hl-face-mapping nil nil #'equal))
+
+(add-hook! haskell-mode
+           (add-function :before-until (local 'tree-sitter-hl-face-mapping-function) #'+haskell-tree-sitter-hl-face-custom-get))
+#+end_src
+
+We can then fill this mapping variable. This can be done repeatedly without re-evaluating the functions above.
+
+#+begin_src elisp
+(setq +haskell-tree-sitter-hl-face-mapping
+      '(("pragma" . +haskell-pragma)
+        ("haddock.multiline" . font-lock-doc-face)
+        ("type" . +haskell-type)
+        ("haskell.type.application.operator" . +haskell-type-application-operator)
+        ("haskell.list.type" . +haskell-type)
+        ("haskell.list.constructor" . +haskell-constructor)
+        ("constructor" . +haskell-constructor)
+        ("haskell.unit.type" . +haskell-type)
+        ("haskell.unit.constructor" . +haskell-constructor)
+        ("haskell.list.type.punctuation" . +haskell-type-punctuation)
+        ("haskell.tuple.type.punctuation" . +haskell-type-punctuation)
+        ("haskell.label" . +haskell-label)
+        ("haskell.qq.punctuation" . +haskell-qq-punctuation)
+        ("haskell.qq.quoter" . +haskell-qq-quoter)
+        ("haskell.qq.body" . +haskell-qq-body)
+        ("type.strict" . +haskell-type-strict)))
+#+end_src
+
+Here, we define the extra faces we need.
+
+#+begin_src elisp
+(custom-set-faces! '(+haskell-lambda-symbol :inherit font-lock-keyword-face))
+#+end_src
+
+#+begin_src elisp
+(defface +haskell-pragma nil nil)
+(defface +haskell-lambda-symbol nil nil)
+(defface +haskell-type-application-operator nil nil)
+(defface +haskell-type-strict nil nil)
+(defface +haskell-type nil nil)
+(defface +haskell-type-constructor-punctuation nil nil)
+(defface +haskell-type-punctuation nil nil)
+(defface +haskell-constructor nil nil)
+(defface +haskell-label nil nil)
+(defface +haskell-qq-punctuation nil nil)
+(defface +haskell-qq-quoter nil nil)
+(defface +haskell-qq-body nil nil)
+
+(custom-set-faces!
+;;  `(+haskell-pragma :inherit haskell-pragma-face)
+  `(+haskell-type-application-operator :weight bold)
+  `(+haskell-type-strict :foreground ,(one-dark-color 'blue))
+  `(+haskell-type :inherit font-lock-type-face)
+  `(+haskell-type-punctuation :inherit font-lock-type-face)
+;  `(+haskell-constructor :inherit font-lock-constructor-face
+;                         :weight medium)
+  `(+haskell-label :foreground ,(one-dark-color 'light-green))
+  `(+haskell-qq-punctuation :foreground ,(one-dark-color 'pink))
+  `(+haskell-qq-quoter :foreground ,(one-dark-color 'pink)
+                       :weight normal)
+  `(+haskell-qq-body :inherit org-block :foreground ,(one-dark-color 'green)))
+#+end_src
+
+***** HLS
+
+These options configure the haskell language server.
+
+****** Formatter
+
+#+begin_src elisp
+(after! lsp-haskell
+  (setq lsp-haskell-formatting-provider "fourmolu"))
+#+end_src
+
+***** Interactive Mode
+
+****** Hoogle Config
+
+#+begin_src elisp
+(custom-set-variables
+ '(haskell-process-suggest-hoogle-imports t)
+ '(haskell-interactive-types-for-show-ambiguous t))
+#+end_src
+
+****** Evil Bindings
+
+Override some evil bindings so that insert mode will always insert at the prompt.
+
+#+begin_src elisp
+(defun haskell-interactive--get-prompt-point ()
+  "Gets the start of the the current prompt"
+  (marker-position haskell-interactive-mode-prompt-start))
+
+(defun haskell-interactive--get-end-of-line (&optional pt)
+  "Gets the end of the line, bypassing line wraps.
+If PT is specified, find it's end of the line instead of the end of the line at the current prompt"
+  (save-excursion
+    (when pt (goto-char pt))
+    (end-of-line)
+    (point)))
+
+(defun +haskell-interactive-goto-current-prompt ()
+  "Goes to the the cursor to the current prompt"
+  (interactive)
+    (when (not (haskell-interactive-at-prompt))
+      (goto-char haskell-interactive-mode-prompt-start)))
+
+(defun +haskell-interactive-append ()
+  "Append text at the next prompt."
+  (interactive)
+  (if (haskell-interactive-at-prompt)
+      (call-interactively #'evil-append)
+      (goto-char haskell-interactive-mode-prompt-start)
+      (call-interactively #'evil-append-line)))
+
+(defun +haskell-interactive-append-line ()
+  "Append to end of line of the next prompt."
+  (interactive)
+  (when (not (haskell-interactive-at-prompt))
+    (goto-char haskell-interactive-mode-prompt-start))
+  (call-interactively #'evil-append-line))
+
+(defun +haskell-interactive-insert ()
+  "Insert text at the next prompt."
+  (interactive)
+  (when (not (haskell-interactive-at-prompt))
+    (goto-char haskell-interactive-mode-prompt-start))
+  (call-interactively #'evil-insert))
+
+(defun +haskell-interactive-insert-line ()
+  "Insert at the start of the prompt."
+  (interactive)
+  (goto-char haskell-interactive-mode-prompt-start)
+  (call-interactively #'evil-insert))
+
+(evil-define-operator +haskell-interactive-delete (beg end type register yank-handler)
+  "Modification of the evil-delete to work in haskell interactive buffer.
+Delete text from BEG to END with TYPE
+Save in REGISTER or the kill-ring with YANK_HANDLER"
+  (interactive "<R><x><y>")
+  (let* ((beg (max (or beg (point)) (haskell-interactive--get-prompt-point)))
+         (end (min (or end beg) (haskell-interactive--get-end-of-line))))
+    (evil-delete beg end type register)
+    (when (eq type 'line)
+      (haskell-interactive-mode-bol))))
+
+(defun +haskell-interactive-open-below ()
+  "Opens a new line. Opens a prompt of the cursor is not a te new line"
+  (interactive)
+  (cond ((<= (point) (haskell-interactive--get-prompt-point))
+         (goto-char (point-max))
+         (insert "\n")
+         (haskell-interactive-mode-prompt)
+         (call-interactively #'+haskell-interactive-insert))
+        (t
+         (call-interactively #'evil-open-below))))
+
+(map! :after haskell-interactive-mode
+      :map haskell-interactive-mode-map
+      :n "][" #'haskell-interactive-mode-prompt-next
+      :n "[[" #'haskell-interactive-mode-prompt-previous
+      :n "a" #'+haskell-interactive-append
+      :n "A" #'+haskell-interactive-append-line
+      :n "d" #'+haskell-interactive-delete
+      :n "i" #'+haskell-interactive-insert
+      :n "I" #'+haskell-interactive-insert-line
+      :n "o" #'+haskell-interactive-open-below
+      :n "RET" #'haskell-interactive-mode-return)
+#+end_src
+
+Next, we define some evil-like bindings to quickly walk through the interactive console.
+
+****** Toggle print mode
+
+This command toggles the mode in which the results of ghci will be displayed.
+
+#+begin_src elisp
+(defun haskell-interactive-toggle-print-mode ()
+  (interactive)
+  (setq haskell-interactive-mode-eval-mode
+        (intern
+         (ido-completing-read "Eval result mode"
+                              '("fundamental-mode"
+                                "haskell-mode"
+                                "ghc-core-mode")))))
+
+(after! haskell-interactive-mode
+  (setq haskell-interactive-mode-eval-mode 'haskell-mode))
+#+end_src
+
+****** Enable lookups
+
+Enables lookups from a GHCI-window!
+
+#+begin_src elisp
+(set-lookup-handlers! 'haskell-interactive-mode
+  :definition #'haskell-mode-jump-to-def)
+#+end_src
+
+****** Pop-ups
+
+Pop-up of the repl itself:
+
+#+begin_src elisp
+(after! haskell-session
+ (defun +haskell-interactive-session-buffer? (name)
+   "Checks if the provided name is an haskell interactive session"
+   (let ((session-names (mapcar
+                         (lambda (item) (format "*%s*" (alist-get 'name item)))
+                         haskell-sessions)))
+   (member name session-names)))
+ (set-popup-rule! #'+haskell-interactive-session?
+   :size 80
+   :actions #'+display-buffer-in-side-window
+   :side 'right
+   :vslot -1
+   :modeline nil))
+#+end_src
+
+Pop-up that shows the errors:
+
+#+begin_src elisp
+(set-popup-rule! "^\\*HS-Error\\*" :size 12 :quit t :vslot 0)
+#+end_src
+
+***** TODO Haddock editing
+
+Lots of improvements can be made here!
+
+- Insert functions for hints at
+  - Functions
+  - Arguments
+  - ...
+- Insert functions, syntax highighting and maybe completion for
+  - Types links ( ~'T'~)
+  - Variable links (~'foo''~)
+  - directives (~@source~)
+  - italic (~/italic/~)
+  - bold (~__bold__~)
+- Better line breaks while editing a haddock block.
+  - Keep the lines together in multi-line blocks (~{-| like this -}~)
+  - Adding new lines in single line blocks
+
+Should be implemented using the [[https://haskell-haddock.readthedocs.io/en/latest/markup.html][the haddock markup documentation]].
+
+***** TODO Find definitions everywhere
+
+I would like to have find definition (aka ~K~) also in the response of ~haskell-interactive-mode~ and in ~lsp-help-mode~.
+
+Some possibilities are:
+- Leverage hoogle to find those definitions.
+- Use ~haskell-process-do-info~ as it seems to work in most cases...
+
+***** TODO Cleanup imports
+
+It would be nice to have one function with one key-binding that cleans up all the imports in a Haskell module without jumping to the imports and calling the lsp code-actions manually.
+
+***** Stack...
+
+Place to put functions to help with managing stack projects.
+
+****** TODO Jump to ~stack.yaml~
+
+****** TODO Jump to ~package.yaml~
+
+****** TODO Add dependency to ~package.yaml~
+
+***** Menu
+
+Settings for the haskell menu.
+
+Firstly, it should open in a popup!
+
+#+begin_src elisp
+(after! haskell-mode
+  (set-popup-rule!
+    (lambda (arg) (string-equal arg haskell-menu-buffer-name))
+    :size 6 :quit t :slot -1))
+
+#+end_src
+
+Then define the toggle function.
+
+#+begin_src elisp
+(setq haskell-menu-buffer-name "*haskell-menu*")
+
+(defun +haskell-menu/toggle ()
+    "Toggles the Haskell sessions menu"
+    (interactive)
+    (or (get-buffer haskell-menu-buffer-name)
+        (with-current-buffer (get-buffer-create haskell-menu-buffer-name) (haskell-menu-mode)))
+    (if-let (win (get-buffer-window haskell-menu-buffer-name))
+            (delete-window win)
+            (pop-to-buffer haskell-menu-buffer-name)
+            (haskell-menu-revert-function nil nil)))
+#+end_src
+
+Finally, we add a keybinding to toggle the haskell menu.
+
+#+begin_src elisp
+(map! :leader :prefix "o" :n "h" #'+haskell-menu/toggle)
+#+end_src
+
+***** Hoogle
+
+Defining the hoogle command
+
+#+begin_src elisp
+(after! haskell-hoogle
+  (setq haskell-hoogle-command "hoogle --count=40")
+
+  (evil-define-command +evil:hoogle (&optional query)
+    "Searches hoogle"
+    (interactive "<a>")
+    (haskell-hoogle query))
+
+  (evil-ex-define-cmd "hoogl[e]" '+evil:hoogle))
+#+end_src
+
+Keybindings
+
+#+begin_src elisp
+(map!
+ :after haskell-hoogle
+ :leader
+ "s h" #'haskell-hoogle)
+#+end_src
+
+***** Fixes
+
+Somehow, I needed to add this to make ~haskell-mode~ work...
+
+#+begin_src elisp
+(setq flymake-allowed-file-name-masks nil)
+
+(add-to-list 'flymake-allowed-file-name-masks
+             '("\\.hs\\'" haskell-flymake-init))
+#+end_src
+
+***** Keybindings
+
+****** For ~haskell-mode~
+
+The mode for editing haskell files.
+
+#+begin_src elisp
+(map! :after haskell-mode
+      :map haskell-mode-map
+      :localleader
+      "r" #'haskell-process-load-file
+      :desc "compile" "b" #'haskell-compile
+      :desc "goto imports" "i" #'haskell-navigate-imports)
+#+end_src
+
+****** For ~haskel-cabal-mode~
+
+#+begin_src elisp
+(map! :after haskell-cabal
+      :map haskell-cabal-mode-map
+      :localleader
+      :desc "compile" "b" #'haskell-compile)
+#+end_src
+
+****** For ~haskell-interactive-mode~
+
+The mode for running ~ghci~.
+
+#+begin_src elisp
+(map! :after haskell-interactive-mode
+      :map haskell-interactive-mode-map
+      :localleader
+      :desc "Toggle GHCI output" "t" #'haskell-interactive-toggle-print-mode)
+#+end_src
+
+****** For ~haskell-error-mode~
+
+The mode for errors that occur in ~ghci~.
+
+#+begin_src elisp
+(map! :map haskell-error-mode-map
+      :vinm "q" #'+popup/quit-window
+      :vinm "<escape>" #'+popup/quit-window)
+#+end_src
+
+**** Web
+
+***** No LSP format.
+
+The lsp formatter is conflicting with prettier. Better to always use prettier if possible.
+
+#+begin_src elisp
+(setq-hook! 'web-mode-hook +format-with-lsp nil)
+#+end_src
+
+**** FSharp
+
+***** Configure Eglot
+
+#+begin_src elisp
+(use-package! eglot-fsharp
+  :defer t)
+#+end_src
+
+**** Bicep
+
+#+begin_src elisp
+(load! "~/.myconf/emacs/lisp/bicep-mode.el")
+
+(add-hook 'bicep-mode-hook #'lsp!)
+#+end_src
+
+**** Vue
+
+***** Define Vue-mode for volar
+
+#+begin_src elisp
+(define-derived-mode vue-mode web-mode "Vue"
+  "A major mode derived from web-mode, for editing .vue files with volar language server.")
+
+(add-to-list 'auto-mode-alist '("\\.vue\\'" . vue-mode))
+#+end_src
+
+***** Enable LSP/Eglot mode
+
+This uses the ~lsp!~ function from doom-emacs, which automatically sets the lsp-client to ~lsp~ or ~eglot~, depending on the ~init.el~ file.
+
+#+begin_src elisp :tangle nil
+(add-hook 'vue-mode-hook #'lsp!)
+#+end_src
+
+***** Ensure Eglot uses Volar
+
+The following function generates the volar configuration for eglot.
+
+#+begin_src elisp
+(defun vue-eglot-init-options ()
+             (let ((tsdk-path (expand-file-name
+                               "lib"
+                               (string-trim-right (shell-command-to-string "npm list --global --parseable typescript | head -n1 | tr -d \"\n\""))
+                               )))
+               `(:typescript (:tsdk ,tsdk-path
+                              :languageFeatures (:completion
+                                                 (:defaultTagNameCase "both"
+                                                  :defaultAttrNameCase "kebabCase"
+                                                  :getDocumentNameCasesRequest nil
+                                                  :getDocumentSelectionRequest nil)
+                                                 :diagnostics
+                                                 (:getDocumentVersionRequest nil))
+                              :documentFeatures (:documentFormatting
+                                                 (:defaultPrintWidth 100
+                                                  :getDocumentPrintWidthRequest nil)
+                                                 :documentSymbol t
+                                                 :documentColor t)))))
+#+end_src
+
+Then, we add it to the list of eglot language servers.
+
+#+begin_src elisp
+(after! eglot
+  (add-to-list 'eglot-server-programs
+               `(vue-mode . ("vue-language-server" "--stdio" :initializationOptions ,(vue-eglot-init-options))))
+  (add-hook 'vue-mode-hook 'eglot-ensure))
+#+end_src
+
+**** PHP
+
+***** Intelephense
+
+The =lsp=-package fogot to implement some lsp-settings for the =intelephense=-server. Therefore, I'll add them here.
+
+#+begin_src elisp
+(after! lsp
+  (defcustom-lsp lsp-intelephense-document-root "apps/backend/public/index.php"
+    "The directory of the entry point to the application (index.php)."
+    :type 'string
+    :group 'lsp-intelephense
+    :lsp-path "intelephense.environment.documentRoot")
+  (defcustom-lsp lsp-intelephense-include-paths []
+    "The include paths"
+    :type '(repeat string)
+    :group 'lsp-intelephense
+    :lsp-path "intelephense.environment.includePaths"))
+#+end_src
+
+**** C#
+
+***** Enable LSP-mode
+
+#+begin_src elisp
+(add-hook 'csharp-tree-sitter-mode-hook #'lsp!)
+#+end_src
+
+**** Brewfile
+
+***** Major-mode
+
+A ~Brewfile~ is essentially just a stripped-down version of a ~ruby~ script. Therefore, we can use ~ruby-mode~ to define a new mode for Brewfiles.
+
+#+begin_src elisp
+(define-derived-mode brewfile-mode ruby-mode "Brewfile")
+#+end_src
+
+For now, we will only activate this mode for files named =Brewfile= or files with the the =.Brewfile= extension.
+
+#+begin_src elisp
+(add-to-list 'auto-mode-alist '("[/.]Brewfile\\'" . brewfile-mode))
+#+end_src
+
+**** GraphQL
+
+***** Enable GraphQL in ~js~ and ~ts~.
+
+#+begin_src elisp
+(after! mmm-mode
+  (mmm-add-classes '((js-graphql
+                      :submode graphql-mode
+                      :face mmm-declaration-submode-face
+                      :front "[^a-zA-Z]gql`"
+                      :back "`")))
+  (mmm-add-mode-ext-class 'typescript-ts-mode nil 'js-graphql)
+  (setq mmm-global-mode 'maybe))
+#+end_src
+
+*** Modes
+
+This section concerns the configuration specific to modes.
+
+**** Tidal
+
+***** Parameters
+
+#+begin_src elisp
+(setq tidal-boot-script-path "~/workspace/tidal/BootTidal.hs")
+#+end_src
+
+***** Key-bindings
+
+#+begin_src emacs-lisp
+(after! tidal
+  (map! :map tidal-mode-map
+        :n [return] #'tidal-run-multiple-lines
+        :n "1"      #'tidal-run-d1
+        :n "s-1"    #'tidal-stop-d1
+        :n "2"      #'tidal-run-d2
+        :n "s-2"    #'tidal-stop-d2
+        :n "3"      #'tidal-run-d3
+        :n "s-3"    #'tidal-stop-d3
+        :n "4"      #'tidal-run-d4
+        :n "s-4"    #'tidal-stop-d4
+        :n "5"      #'tidal-run-d5
+        :n "s-5"    #'tidal-stop-d5
+        :n "6"      #'tidal-run-d6
+        :n "s-6"    #'tidal-stop-d6
+        :n "7"      #'tidal-run-d7
+        :n "s-7"    #'tidal-stop-d7
+        :n "8"      #'tidal-run-d8
+        :n "s-8"    #'tidal-stop-d8
+        :n "9"      #'tidal-run-d9
+        :n "s-9"    #'tidal-stop-d9
+        :n "§"      #'tidal-hush)
+  (map! :leader
+        :map tidal-mode-map
+        "S" #'tidal-start-haskell))
+
+#+end_src
+
+**** Org
+
+***** Keybindings
+
+On the local leader:
+
+#+begin_src elisp
+(map! :after org
+      :map org-mode-map
+      :localleader
+      "H" #'org-insert-heading
+      :desc "tangle" "RET" #'org-babel-tangle)
+#+end_src
+
+**** Yasnippets
+
+Configures ~snippet-mode~ for ~yasnippets~.
+
+#+begin_src elisp
+(map! :after yasnippet
+      :map snippet-mode-map
+      :localleader
+      :desc "Load buffer" "b" #'yas-load-snippet-buffer
+      :desc "Load buffer and close" "RET" #'yas-load-snippet-buffer-and-close
+      :desc "Tryout snippet" "t" #'yas-tryout-snippet)
+#+end_src
+
+*** Fixes & Workarounds
+
+This section defines workarounds for unexpected behaviour.
+
+**** Json null-characters
+
+The emacs json-parser does not like null-characters. The following advices ensure that there are no null-characters in the input-strings of a json.
+
+#+begin_src elisp
+(advice-add 'json-parse-string :around
+            (lambda (orig string &rest rest)
+              (apply orig (s-replace "\\u0000" "" string)
+                     rest)))
+
+(advice-add 'json-parse-buffer :around
+            (lambda (oldfn &rest args)
+              (save-excursion
+                (while (search-forward "\\u0000" nil t)
+                  (replace-match "" nil t)))
+                  (apply oldfn args)))
+#+end_src
+
+* References
+
+** Literate configuration
+
+- [[https://tecosaur.github.io/emacs-config/config.html]]
