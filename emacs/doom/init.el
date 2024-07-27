@@ -150,7 +150,7 @@
        (lua +tree-sitter)
        markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
-       ;;nix               ; I hereby declare "nix geht mehr!"
+       (nix +tree-sitter +lsp)               ; I hereby declare "nix geht mehr!"
        (ocaml +tree-sitter)             ; an objective camel
        (org +gnuplot +passwords +dragndrop +roam2)               ; organize your plain life in plain text
        (php +lsp +tree-sitter) ; perl's insecure younger brother
@@ -185,7 +185,7 @@
        ;;emms
        ;;everywhere        ; *leave* Emacs!? You must be joking
        ;;irc               ; how neckbeards socialize
-       ;;(rss +org)        ; emacs as an RSS reader
+       (rss +org)        ; emacs as an RSS reader
        ;;twitter           ; twitter client https://twitter.com/vnought
 
        :config

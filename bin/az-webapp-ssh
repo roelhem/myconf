@@ -1,0 +1,11 @@
+#!/usr/bin/env zsh
+set -e
+
+TunnelPort="52556"
+
+az webapp create-remote-connection \
+    --resource-group precon-tools-staging \
+    --name pt-backend-staging \
+    --port "$TunnelPort" &
+
+echo $!

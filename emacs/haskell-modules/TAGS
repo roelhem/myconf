@@ -1,0 +1,19 @@
+
+./lib/Emacs/Init.hs,239
+module Emacs.Init (initialise)7,8
+true, false :: CBool24,25
+true, false24,25
+true =25,26
+false =26,27
+initialise ::28,29
+initialise runtime29,30
+initialise' ::38,39
+initialise' =39,40
+compilerInfo ::45,46
+compilerInfo Stop46,47
+
+./src/Data/Emacs/Encode.hs,138
+module Data.Emacs.Encode (ToEmacs(..))2,3
+  make :: WithCallStack => MonadEmacs m v => a ->11,12
+  make ::11,12
+instance ToEmacs13,14

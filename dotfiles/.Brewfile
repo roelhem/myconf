@@ -81,6 +81,7 @@ brew "imagemagick"  # magick
 cask "mactex"       # LaTeX
 # brew "gdk-pixbuf" # Toolkit for image loading and pixel buffer manipulation
 cask "xquartz"      # Open source X11
+brew "gtk+3"
 
 
 # Build Tools
@@ -93,7 +94,7 @@ brew "ninja"        # Small build system for use with gyp or CMake
 brew "swiftformat"
 brew "sqlite"
 
-# Maybe via rust-cargo???
+# MAYBE via rust-cargo???
 
 # Compilers/Interpreters
 brew "gcc"              # GNU's c/c++ compiler
@@ -137,7 +138,8 @@ brew "libiconv"
 # brew "freetds" # Libraries to talk to Microsoft SQL Server and Sybase databases
 # brew "gobject-introspection"
 # brew "harfbuzz" # OpenType text shaping engine
-# brew "pango" # Framework for layout and rendering of i18n text
+brew "pango" # Framework for layout and rendering of i18n text
+brew "cairo"
 brew "libheif" # High Efficientcy Image File Format
 brew "krb5" # Kerebos network authentication protocol
 brew "zeromq" # High-performance, asynchronous messaging library
@@ -208,6 +210,9 @@ cask "kicad"              # CAD to design circuit-boards
 cask "openscad"           # Cad for emacs.
 cask "prusaslicer"        # For prusa printers
 
+# Embedded
+brew "platformio"
+
 # Terminals
 brew "minicom"            # clone of the MS-DOS "Telix" communication program.
 brew "fish"               # Frendly shell.
@@ -240,7 +245,6 @@ cask "chromedriver"       # Google Chrome-controller for Selenium
 cask "chromium"           # Google Chrome, but without identity theft...
 cask "microsoft-edge"     # Microsoft Chrome
 cask "opera"
-
 
 # Team Communication
 cask "slack"

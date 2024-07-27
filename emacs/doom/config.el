@@ -218,6 +218,25 @@ Version: 2020-06-04 2023-05-13"
     :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/storage.json")))
 ;; APIs:1 ends here
 
+;; Htmlize
+
+
+;; [[file:../../config.org::*Htmlize][Htmlize:1]]
+(setq htmlize-html-major-mode 'web-mode
+      htmlize-css-name-prefix "emacs-")
+;; Htmlize:1 ends here
+
+;; NX
+
+
+;; [[file:../../config.org::*NX][NX:1]]
+(load! "~/.myconf/emacs/lisp/nx-mode.el")
+
+(map! :leader
+      "p n f" #'nx-project-find-file
+      "p n R" #'nx-project-run-target)
+;; NX:1 ends here
+
 ;; Theme
 
 ;; This sets the default theme for emacs.
@@ -366,6 +385,51 @@ Optinally use FMT to specify the format of the face symbol names."
 (display-time-mode 1) ; Enables the display-time minor-mode.
 ;; Date/Time:1 ends here
 
+;; Enabled widgets
+
+
+;; [[file:../../config.org::*Enabled widgets][Enabled widgets:1]]
+(setq +doom-dashboard-functions
+      '(doom-dashboard-widget-banner
+        doom-dashboard-widget-shortmenu))
+;; Enabled widgets:1 ends here
+
+;; Source list
+
+
+;; [[file:../../config.org::*Source list][Source list:1]]
+(setq treesit-language-source-alist
+      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (cmake "https://github.com/uyha/tree-sitter-cmake")
+        (make "https://github.com/alemuller/tree-sitter-make")
+        (css "https://github.com/tree-sitter/tree-sitter-css")
+        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+        (go "https://github.com/tree-sitter/tree-sitter-go")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (toml "https://github.com/tree-sitter/tree-sitter-toml")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+        (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
+        (php "https://github.com/tree-sitter/tree-sitter-php" "master")
+        (bicep "https://github.com/tree-sitter-grammars/tree-sitter-bicep")
+        (unison "https://github.com/fmguerreiro/tree-sitter-unison-kylegoetz" "build/include-parser-in-src-control")))
+;; Source list:1 ends here
+
+;; Bulk install
+
+
+;; [[file:../../config.org::*Bulk install][Bulk install:1]]
+(defun +treesit-install-all-language-grammars ()
+  "Installs all tree sitter language grammars defined in ~treesit-language-source-alist~."
+  (interactive)
+  (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist)))
+;; Bulk install:1 ends here
+
 ;; Line numbers
 
 ;; This determines the style of line numbers in the editor.
@@ -456,6 +520,23 @@ Optinally use FMT to specify the format of the face symbol names."
       :desc "Undelete frame" "u" #'undelete-frame)
 ;; Frames (~SPC F~):1 ends here
 
+;; Special Files (~SPC o ,~)
+
+
+;; [[file:../../config.org::*Special Files (~SPC o ,~)][Special Files (~SPC o ,~):1]]
+(defconst rh/special-files/hosts "/etc/hosts"
+  "Location of the hosts file")
+
+(defun rh/special-files-open/hosts ()
+  "Opens the hosts file"
+  (interactive)
+  (doom/sudo-find-file rh/special-files/hosts))
+
+(map! :leader
+      :prefix ("o ," . "special files")
+      :desc rh/special-files/hosts "h" #'rh/special-files-open/hosts)
+;; Special Files (~SPC o ,~):1 ends here
+
 ;; Page scrolling
 
 ;; I like ~h,j,k,l~! also ~s-h,s-j,s-k,s-l~ seem to be unused, so lets bind them so that they handle scrolling large buffers!
@@ -492,6 +573,28 @@ Optinally use FMT to specify the format of the face symbol names."
   (which-key-add-key-based-replacements
     "g z" "multiple-cursors"))
 ;; Key replacements:1 ends here
+
+;; Restart LSP
+
+
+;; [[file:../../config.org::*Restart LSP][Restart LSP:1]]
+(defun +lsp-restart ()
+  "Restarts the LSP workspace"
+  (interactive)
+  (lsp-restart-workspace))
+
+(map! :after lsp-mode
+      :leader
+      "h r l" #'+lsp-restart)
+;; Restart LSP:1 ends here
+
+;; Format buffer
+
+
+;; [[file:../../config.org::*Format buffer][Format buffer:1]]
+(map! :leader
+      "b f" #'+format/buffer)
+;; Format buffer:1 ends here
 
 ;; MacOS Fullscreen
 
@@ -544,13 +647,27 @@ Optinally use FMT to specify the format of the face symbol names."
 
 
 ;; [[file:../../config.org::*Project files][Project files:1]]
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.nx\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]dist\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.postman\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.spago\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.phpunit.cache\\'"))
+(let ((ld 'lsp-file-watch-ignored-directories)
+      (lf 'lsp-file-watch-ignored-files))
+  (with-eval-after-load 'lsp-mode
+    (add-to-list ld "[/\\\\]\\.nx\\'")
+    (add-to-list ld "[/\\\\]vendor\\'")
+    (add-to-list ld "[/\\\\]dist\\'")
+    (add-to-list ld "[/\\\\]\\.postman\\'")
+    (add-to-list ld "[/\\\\]\\.spago\\'")
+    (add-to-list ld "[/\\\\]\\.phpunit.cache\\'")
+    (add-to-list ld "[/\\\\]doomemacs"))
+)
 ;; Project files:1 ends here
+
+;; Json to TypeScript
+
+
+;; [[file:../../config.org::*Json to TypeScript][Json to TypeScript:1]]
+(defun rh/json-schema-to-typescript-buffer ()
+  (interactive)
+  (shell-command))
+;; Json to TypeScript:1 ends here
 
 ;; Highlighting Patterns
 
@@ -885,12 +1002,12 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
 (map! :leader :prefix "o" :n "h" #'+haskell-menu/toggle)
 ;; Menu:3 ends here
 
-;; Hoogle
+;; Via CLI
 
-;; Defining the hoogle command
+;; Defines how the hoogle command should be called from the CLI. Then also define an evil-command so that hoogle can be accessed via ~:hoogl ...~.
 
 
-;; [[file:../../config.org::*Hoogle][Hoogle:1]]
+;; [[file:../../config.org::*Via CLI][Via CLI:1]]
 (after! haskell-hoogle
   (setq haskell-hoogle-command "hoogle --count=40")
 
@@ -900,19 +1017,26 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
     (haskell-hoogle query))
 
   (evil-ex-define-cmd "hoogl[e]" '+evil:hoogle))
-;; Hoogle:1 ends here
+;; Via CLI:1 ends here
+
+;; Via Browser
+
+;; First add hoogle to list of web lookups.
 
 
+;; [[file:../../config.org::*Via Browser][Via Browser:1]]
+(add-to-list '+lookup-provider-url-alist '("Hoogle" "https://hoogle.haskell.org/?hoogle=%s"))
+;; Via Browser:1 ends here
 
 ;; Keybindings
 
 
-;; [[file:../../config.org::*Hoogle][Hoogle:2]]
+;; [[file:../../config.org::*Keybindings][Keybindings:1]]
 (map!
  :after haskell-hoogle
  :leader
  "s h" #'haskell-hoogle)
-;; Hoogle:2 ends here
+;; Keybindings:1 ends here
 
 ;; Fixes
 
@@ -973,6 +1097,13 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
       :vinm "<escape>" #'+popup/quit-window)
 ;; For ~haskell-error-mode~:1 ends here
 
+;; LSP
+
+
+;; [[file:../../config.org::*LSP][LSP:1]]
+; (push '((unison-ts-mode) "127.0.0.1" 5757) eglot-server-programs)
+;; LSP:1 ends here
+
 ;; No LSP format.
 
 ;; The lsp formatter is conflicting with prettier. Better to always use prettier if possible.
@@ -994,9 +1125,20 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
 
 
 ;; [[file:../../config.org::*Bicep][Bicep:1]]
-(load! "~/.myconf/emacs/lisp/bicep-mode.el")
+(add-to-list 'auto-mode-alist '("\\.bicep\\'" . bicep-ts-mode))
 
-(add-hook 'bicep-mode-hook #'lsp!)
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration '(bicep-ts-mode . "bicep"))
+  (lsp-register-client
+   (make-lsp-client :new-connection(lsp-stdio-connection '("dotnet" "/usr/local/bin/bicep-langserver/Bicep.LangServer.dll"))
+                    :activation-fn (lsp-activate-on "bicep")
+                    :server-id 'bicep-langserver)))
+
+(defun roelhem/bicep-ts-mode-tweaks ()
+  (setq-local comment-start "// "))
+
+(add-hook 'bicep-ts-mode-hook #'lsp!)
+(add-hook 'bicep-ts-mode-hook #'roelhem/bicep-ts-mode-tweaks)
 ;; Bicep:1 ends here
 
 ;; Define Vue-mode for volar
@@ -1105,12 +1247,39 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
   (setq mmm-global-mode 'maybe))
 ;; Enable GraphQL in ~js~ and ~ts~.:1 ends here
 
+;; Feeds
+
+
+;; [[file:../../config.org::*Feeds][Feeds:1]]
+(setq elfeed-feeds
+      '("https://opendata.cbs.nl/ODataCatalog/Tables"))
+;; Feeds:1 ends here
+
 ;; Parameters
 
 
 ;; [[file:../../config.org::*Parameters][Parameters:1]]
 (setq tidal-boot-script-path "~/workspace/tidal/BootTidal.hs")
 ;; Parameters:1 ends here
+
+;; Setup
+
+
+;; [[file:../../config.org::*Setup][Setup:1]]
+(use-package org-tree-slide
+  :custom
+  (org-image-actual-width nil))
+;; Setup:1 ends here
+
+;; Keybindings
+
+
+;; [[file:../../config.org::*Keybindings][Keybindings:1]]
+(map! :after org-tree-slide
+      :map org-tree-slide-mode-map
+      "<f5>" 'org-tree-slide-move-previous-tree
+      "<f6>" 'org-tree-slide-move-next-tree)
+;; Keybindings:1 ends here
 
 ;; Keybindings
 

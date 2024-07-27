@@ -47,13 +47,24 @@ For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configu
 (package! polymode)
 (package! ob-fsharp)
 
+(package! org-tree-slide)
+
+(package! evil-cleverparens)
+
 (package! eglot-fsharp)
+(package! bicep-ts-mode)
 
 (package! mmm-mode)
 
 (package! swagg)
 
 (package! kurecolor)
+
+(package! unison-ts-mode
+  :recipe (:type git
+           :host github
+           :repo "fmguerreiro/unison-ts-mode"
+           :files ("*.el")))
 #+end_src
 
 *** Disabling default packages
@@ -241,6 +252,11 @@ But I need it also in lowercase.
   (shell-command "az login --allow-no-subscriptions"))
 #+end_src
 
+***** OAuth2
+
+****** Client Credential Flow
+
+
 ***** Getting Microsoft Graph Access Token
 
 #+begin_src elisp
@@ -249,6 +265,45 @@ But I need it also in lowercase.
   (let ((command "az account get-access-token --resource-type ms-graph --query accessToken --output tsv ")
         (scope-str (string-join (cons "--scope" scopes) " ")))
     (substring (shell-command-to-string (concat command scope-str)) 0 -1)))
+#+end_src
+
+***** CLI Transient
+
+#+begin_src elisp :tangle no
+(transient-define-prefix az-transient ()
+  "Transient for the Azure az command line."
+  :info-manual "THe az command line"
+  [("q" "Quit" transient-quit-one)])
+
+(transient-define-argument az-transient--output-a ()
+  :description "Output format."
+  :class 'transient-option
+  :shortarg "-o"
+  :argument "--output="
+  :choices '("json" "jsonc" "none" "table" "tsv" "yaml" "yamlc")
+  :default "json")
+#+end_src
+
+****** Account
+
+#+begin_src elisp :tangle no
+(transient-define-prefix az-account ()
+  "Transient for the Azure ~az account~ cli."
+  :info-manual "az account"
+  ["Global Arguments"
+   ("-h" "Show help message and exit." "--help")
+   (az-transient--output-a)
+   ("-q" "JMESPath query string." "--query")]
+  ["Commands"
+   ("ss" "Show" transient-quit-one)])
+#+end_src
+
+***** Keybindings
+
+#+begin_src elisp :tangle no
+(map! :leader
+      :prefix "o"
+      :desc "AZ cli" "s-a" #'az-transient)
 #+end_src
 
 **** Swagg
@@ -299,6 +354,23 @@ This is an amazing package by [[https://isamert.net][Isa Mert Gurbuz]] that work
 
 Sources:
  - [[https://github.com/Azure/azure-rest-api-specs][Azure REST-API Specs GitHub-repository]]
+
+**** Htmlize
+
+#+begin_src elisp
+(setq htmlize-html-major-mode 'web-mode
+      htmlize-css-name-prefix "emacs-")
+#+end_src
+
+**** NX
+
+#+begin_src elisp
+(load! "~/.myconf/emacs/lisp/nx-mode.el")
+
+(map! :leader
+      "p n f" #'nx-project-find-file
+      "p n R" #'nx-project-run-target)
+#+end_src
 
 *** Appearance
 
@@ -447,6 +519,148 @@ The characters/strings used to indicate things in emacs.
 (display-time-mode 1) ; Enables the display-time minor-mode.
 #+end_src
 
+**** Dashboard
+
+#+begin_src elisp :tangle no
+(defvar rh/xkcd-dashboard-banner t
+  "Show the dashboard banner")
+
+(defun rh/xkcd-get-json (&optional num)
+  "Gets the xkcd info json for comic NUM. Defaults to the lastes."
+  (let* ((num (or num 0))
+         (url (if (eq num 0)
+                  "https://xkcd.com/info.0.json"
+                (format "https://xkcd.com/%d/info.0.json" num)))
+         (out (xkcd-get-json url num))
+         (json-assoc (json-read-from-string out)))
+    (xkcd-cache-json num out)
+    json-assoc))
+
+(defface rh/xkcd-title
+  '((t (:inherit info-title-1)))
+  "Face for the xkcd title.")
+
+(defface rh/xkcd-alt-text
+  '((t (:inherit org-default)))
+  "Face for the xkcd alt-text.")
+
+(setq rh/xkcd-cur 0)
+
+(defun rh/xkcd-insert-image (&optional num)
+  "Insert xkcd image NUM at point"
+  (let* ((json-assoc (rh/xkcd-get-json num))
+         (img (cdr (assoc 'img json-assoc)))
+         (num (cdr (assoc 'num json-assoc)))
+         (alt (cdr (assoc 'alt json-assoc)))
+         (safe-title (cdr (assoc 'safe_title json-assoc)))
+         (file (xkcd-download img num))
+         (title (format "%d: %s" num safe-title)))
+    (insert (propertize title 'face 'rh/xkcd-title))
+    (insert "\n\n")
+    (xkcd-insert-image file num)
+    (when (eq rh/xkcd-cur 0)
+      (setq rh/xkcd-cur num))
+    (insert "\n\n")
+    (insert (propertize alt 'face 'rh/xkcd-alt-text))
+    (insert "\n")
+    num))
+
+(defun rh/xkcd-doom-dashboard-banner ()
+  "Shows an xkcd comic as the banner of the dashboard"
+  (let ((point (point)))
+    (when (and (display-graphic-p)
+               rh/xkcd-dashboard-banner)
+      (rh/xkcd-insert-image rh/xkcd-cur)
+      (insert (make-string 2 ?\n)))))
+
+(defun rh/load-xkcd-commic (num)
+  ""
+  (message "Load commic %d" num)
+  (setq rh/xkcd-cur num)
+  (+doom-dashboard-reload 'force))
+
+(defun rh/xkcd-next (arg)
+  "Next xkcd commic"
+  (interactive "p")
+  (let ((num (+ rh/xkcd-cur arg)))
+    (when (> num xkcd-latest)
+      (setq num xkcd-latest))
+    (rh/load-xkcd-commic num)))
+
+(defun rh/xkcd-previous (arg)
+  "Prev xkcd commic"
+  (interactive "p")
+  (let ((num (- rh/xkcd-cur arg)))
+    (when (< num 1)
+      (setq num 1))
+    (rh/load-xkcd-commic num)))
+
+(defun rh/doom-dashboard-footer ()
+  ""
+  (insert (make-string 30 ?\n)))
+#+end_src
+
+***** Enabled widgets
+
+#+begin_src elisp
+(setq +doom-dashboard-functions
+      '(doom-dashboard-widget-banner
+        doom-dashboard-widget-shortmenu))
+#+end_src
+
+***** Keymap
+
+#+begin_src elisp :tangle no
+(setq +doom-dashboard-banner-padding '(0 . 100))
+
+(map! :map '+doom-dashboard-mode-map
+      "h" #'rh/xkcd-previous
+      "p" #'rh/xkcd-previous
+      "<left>" #'rh/xkcd-previous
+      "l" #'rh/xkcd-next
+      "n" #'rh/xkcd-next
+      "<right>" #'rh/xkcd-next)
+
+#+end_src
+
+*** Treesitter
+
+**** Language grammars
+
+***** Source list
+
+#+begin_src elisp
+(setq treesit-language-source-alist
+      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (cmake "https://github.com/uyha/tree-sitter-cmake")
+        (make "https://github.com/alemuller/tree-sitter-make")
+        (css "https://github.com/tree-sitter/tree-sitter-css")
+        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+        (go "https://github.com/tree-sitter/tree-sitter-go")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (toml "https://github.com/tree-sitter/tree-sitter-toml")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+        (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
+        (php "https://github.com/tree-sitter/tree-sitter-php" "master")
+        (bicep "https://github.com/tree-sitter-grammars/tree-sitter-bicep")
+        (unison "https://github.com/fmguerreiro/tree-sitter-unison-kylegoetz" "build/include-parser-in-src-control")))
+#+end_src
+
+***** Bulk install
+
+#+begin_src elisp
+(defun +treesit-install-all-language-grammars ()
+  "Installs all tree sitter language grammars defined in ~treesit-language-source-alist~."
+  (interactive)
+  (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist)))
+#+end_src
+
 *** Editor
 
 Concerns text-buffers and ~evil-mode~.
@@ -554,6 +768,21 @@ Add a frames section to the leader.
       :desc "Undelete frame" "u" #'undelete-frame)
 #+end_src
 
+***** Special Files (~SPC o ,~)
+
+#+begin_src elisp
+(defconst rh/special-files/hosts "/etc/hosts"
+  "Location of the hosts file")
+
+(defun rh/special-files-open/hosts ()
+  "Opens the hosts file"
+  (interactive)
+  (doom/sudo-find-file rh/special-files/hosts))
+
+(map! :leader
+      :prefix ("o ," . "special files")
+      :desc rh/special-files/hosts "h" #'rh/special-files-open/hosts)
+#+end_src
 **** Evil states
 
 ***** Page scrolling
@@ -596,6 +825,26 @@ Make the hints from =which-key= more readable by replacing common prefixes by sy
             '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1")))
   (which-key-add-key-based-replacements
     "g z" "multiple-cursors"))
+#+end_src
+
+**** Restart LSP
+
+#+begin_src elisp
+(defun +lsp-restart ()
+  "Restarts the LSP workspace"
+  (interactive)
+  (lsp-restart-workspace))
+
+(map! :after lsp-mode
+      :leader
+      "h r l" #'+lsp-restart)
+#+end_src
+
+**** Format buffer
+
+#+begin_src elisp
+(map! :leader
+      "b f" #'+format/buffer)
 #+end_src
 
 *** Frames
@@ -645,17 +894,32 @@ To ensure that emacs uses the MacOS-native way of fullscreen on toggle, I overwr
 **** Project files
 
 #+begin_src elisp
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.nx\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]dist\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.postman\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.spago\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.phpunit.cache\\'"))
+(let ((ld 'lsp-file-watch-ignored-directories)
+      (lf 'lsp-file-watch-ignored-files))
+  (with-eval-after-load 'lsp-mode
+    (add-to-list ld "[/\\\\]\\.nx\\'")
+    (add-to-list ld "[/\\\\]vendor\\'")
+    (add-to-list ld "[/\\\\]dist\\'")
+    (add-to-list ld "[/\\\\]\\.postman\\'")
+    (add-to-list ld "[/\\\\]\\.spago\\'")
+    (add-to-list ld "[/\\\\]\\.phpunit.cache\\'")
+    (add-to-list ld "[/\\\\]doomemacs"))
+)
 #+end_src
 
 *** Languages
 
 This section concerns the configuration specific to certain programming languages.
+
+**** JSON
+
+***** Json to TypeScript
+
+#+begin_src elisp
+(defun rh/json-schema-to-typescript-buffer ()
+  (interactive)
+  (shell-command))
+#+end_src
 
 **** Haskell
 
@@ -1022,7 +1286,9 @@ Finally, we add a keybinding to toggle the haskell menu.
 
 ***** Hoogle
 
-Defining the hoogle command
+****** Via CLI
+
+Defines how the hoogle command should be called from the CLI. Then also define an evil-command so that hoogle can be accessed via ~:hoogl ...~.
 
 #+begin_src elisp
 (after! haskell-hoogle
@@ -1036,7 +1302,15 @@ Defining the hoogle command
   (evil-ex-define-cmd "hoogl[e]" '+evil:hoogle))
 #+end_src
 
-Keybindings
+****** Via Browser
+
+First add hoogle to list of web lookups.
+
+#+begin_src elisp
+(add-to-list '+lookup-provider-url-alist '("Hoogle" "https://hoogle.haskell.org/?hoogle=%s"))
+#+end_src
+
+****** Keybindings
 
 #+begin_src elisp
 (map!
@@ -1101,6 +1375,16 @@ The mode for errors that occur in ~ghci~.
       :vinm "<escape>" #'+popup/quit-window)
 #+end_src
 
+**** Unison
+
+***** LSP
+
+#+begin_src elisp
+; (push '((unison-ts-mode) "127.0.0.1" 5757) eglot-server-programs)
+#+end_src
+
+**** Elisp
+
 **** Web
 
 ***** No LSP format.
@@ -1123,9 +1407,20 @@ The lsp formatter is conflicting with prettier. Better to always use prettier if
 **** Bicep
 
 #+begin_src elisp
-(load! "~/.myconf/emacs/lisp/bicep-mode.el")
+(add-to-list 'auto-mode-alist '("\\.bicep\\'" . bicep-ts-mode))
 
-(add-hook 'bicep-mode-hook #'lsp!)
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration '(bicep-ts-mode . "bicep"))
+  (lsp-register-client
+   (make-lsp-client :new-connection(lsp-stdio-connection '("dotnet" "/usr/local/bin/bicep-langserver/Bicep.LangServer.dll"))
+                    :activation-fn (lsp-activate-on "bicep")
+                    :server-id 'bicep-langserver)))
+
+(defun roelhem/bicep-ts-mode-tweaks ()
+  (setq-local comment-start "// "))
+
+(add-hook 'bicep-ts-mode-hook #'lsp!)
+(add-hook 'bicep-ts-mode-hook #'roelhem/bicep-ts-mode-tweaks)
 #+end_src
 
 **** Vue
@@ -1244,6 +1539,15 @@ For now, we will only activate this mode for files named =Brewfile= or files wit
 
 This section concerns the configuration specific to modes.
 
+**** Elfeed
+
+***** Feeds
+
+#+begin_src elisp
+(setq elfeed-feeds
+      '("https://opendata.cbs.nl/ODataCatalog/Tables"))
+#+end_src
+
 **** Tidal
 
 ***** Parameters
@@ -1284,6 +1588,25 @@ This section concerns the configuration specific to modes.
 #+end_src
 
 **** Org
+
+***** Tree Slides
+
+****** Setup
+
+#+begin_src elisp
+(use-package org-tree-slide
+  :custom
+  (org-image-actual-width nil))
+#+end_src
+
+****** Keybindings
+
+#+begin_src elisp
+(map! :after org-tree-slide
+      :map org-tree-slide-mode-map
+      "<f5>" 'org-tree-slide-move-previous-tree
+      "<f6>" 'org-tree-slide-move-next-tree)
+#+end_src
 
 ***** Keybindings
 

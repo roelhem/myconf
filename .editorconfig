@@ -1,0 +1,11 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# Haskell and dhall things are better with 2 indents.
+[*.{hs,hsc,dhall,cabal}]
+indent_style = space
+indent_size = 2
+

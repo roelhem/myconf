@@ -5,9 +5,11 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("52e195b678027dccce6f8dec161146718c42d3daad1b488119539f953c529b86" "2c2fab6eefc7a99c87ec8c8faabd55425a27a3b54fa5dcabd63c3ed96f757ad1" "f2760f0aa88c13c33a19b0347e43721c153af440aaff5bcf686cacda1115465a" "02f57ef0a20b7f61adce51445b68b2a7e832648ce2e7efb19d217b6454c1b644" default))
+ '(elfeed-feeds '("https://opendata.cbs.nl/ODataCatalog/Tables") t)
  '(haskell-interactive-types-for-show-ambiguous t)
  '(haskell-process-suggest-hoogle-imports t)
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
+ '(package-selected-packages '(org-plus-contrib))
  '(safe-local-variable-values
    '((lsp-csharp-solution-file . "/Users/roel/workspace/precon/PreconDotnetServices.sln")
      (lsp-csharp-solution-file . "~/workspace/precon/PreconDotnetServices.sln")
@@ -48,3 +50,4 @@
  '(tree-sitter-hl-face:haddock.multiline ((t (:inherit font-lock-doc-face))) t)
  '(tree-sitter-hl-face:type.argument ((t (:inherit font-lock-type-argument-face))))
  '(ts-fold-replacement-face ((t (:foreground unspecified :box nil :inherit font-lock-comment-face :weight light)))))
+(put 'customize-apropos-faces 'disabled nil)

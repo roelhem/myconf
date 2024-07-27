@@ -33,6 +33,14 @@
 eval $(brew shellenv)
 #+end_src
 
+*** Nix
+
+**** Intall =nix= package manager
+
+#+begin_src shell
+sh <(curl -L https://nixos.org/nix/install)
+#+end_src
+
 *** Node
 
 **** Install =nvm=

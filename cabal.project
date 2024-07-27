@@ -1,0 +1,8 @@
+packages:
+    emacs/haskell-modules/my-emacs-native.cabal
+
+tests:
+    False
+
+benchmarks:
+    False

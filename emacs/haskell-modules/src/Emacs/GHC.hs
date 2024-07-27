@@ -1,0 +1,3 @@
+-- |
+
+module Emacs.GHC where

@@ -17,13 +17,24 @@
 (package! polymode)
 (package! ob-fsharp)
 
+(package! org-tree-slide)
+
+(package! evil-cleverparens)
+
 (package! eglot-fsharp)
+(package! bicep-ts-mode)
 
 (package! mmm-mode)
 
 (package! swagg)
 
 (package! kurecolor)
+
+(package! unison-ts-mode
+  :recipe (:type git
+           :host github
+           :repo "fmguerreiro/unison-ts-mode"
+           :files ("*.el")))
 ;; Enabling packages:1 ends here
 
 ;; Disabling default packages
