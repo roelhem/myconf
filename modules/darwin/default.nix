@@ -1,4 +1,4 @@
-{ config, lib, pkgs, homebrew-core, homebrew-cask, homebrew-bundle, ... }:
+{ config, homebrew-core, homebrew-cask, homebrew-bundle, ... }:
 
 {
   imports = [
@@ -6,6 +6,7 @@
   ];
 
   config = {
+
 
     nix-homebrew = {
       user = "roel";

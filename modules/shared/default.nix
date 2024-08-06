@@ -1,14 +1,22 @@
-{ pkgs, overlays, ... }: {
+{ pkgs, nixpkgsOverlays, ... }: {
 
   imports = [
     ./essentials.nix
   ];
 
+  home-manager.sharedModules = [
+    ../home-manager
+  ];
+
   nix.settings = {
-    experimental-features = "nix-command flakes";
+    experimental-features = "nix-command flakes repl-flake";
     bash-prompt-prefix = "(nix:$name)\\040";
     accept-flake-config = true;
     extra-nix-path = "nixpkgs=flake:nixpkgs";
+    trusted-users = [
+      "@admin"
+      "roel"
+    ];
     substituters = [
       "https://nix-community.cachix.org"
       "https://cache.nixos.org/"
@@ -27,9 +35,7 @@
       allowUnsupportedSystem = true;
     };
 
-    overlays = [
-      overlays.emacs
-    ];
+    overlays = nixpkgsOverlays;
   };
 
   fonts.packages = with pkgs; [

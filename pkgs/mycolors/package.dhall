@@ -1,0 +1,3 @@
+let Color = {}
+
+in { Color }

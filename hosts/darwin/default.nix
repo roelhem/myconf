@@ -2,6 +2,8 @@
 
 {
   nix = {
+    linux-builder.enable = true;
+
     settings = {
       max-jobs = "auto";
       # auto-optimise-store = true;
@@ -43,8 +45,6 @@
 
   services = {
     nix-daemon.enable = true;
-
-    # emacs.enable = true;
   };
 
   programs = {
@@ -101,7 +101,7 @@
     useGlobalPkgs = true;
     useUserPackages = true;
     users = {
-      roel = import ../../home-manager/roel.nix;
+      roel = import ../../home/roel.nix;
     };
   };
 
@@ -153,6 +153,9 @@
         autohide = true;
         expose-animation-duration = 0.5;
         orientation = "bottom";
+        persistent-apps = [
+          "${pkgs.iterm2}/Applications/iTerm2.app"
+        ];
         persistent-others = [
           "~/Downloads"
         ];

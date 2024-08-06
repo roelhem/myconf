@@ -10,21 +10,13 @@
 
 #+startup: fold
 
-* Using this configuration
-
-** Reload config
-
-#+begin_src shell
-org-tangle ~/.myconf/config.org && doom sync
-#+end_src
-
 * Doom Emacs
 
 For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configure emacs.
 
 ** Packages
 :PROPERTIES:
-:header-args:elisp: :tangle "emacs/doom/packages.el"
+:header-args:elisp: :tangle "packages.el"
 :END:
 
 #+begin_src elisp :comments none
@@ -75,13 +67,15 @@ For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configu
 
 ** Configuration
 :PROPERTIES:
-:header-args:elisp: :tangle "emacs/doom/config.el"
+:header-args:elisp: :tangle "config.el"
 :END:
 
 This section defines the ~config.el~ file.
 
 #+begin_src elisp :comments none
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+(load! "./nix-deps.el")
 #+end_src
 
 | Macro            | Description                                                   |
@@ -1438,7 +1432,7 @@ The lsp formatter is conflicting with prettier. Better to always use prettier if
 
 This uses the ~lsp!~ function from doom-emacs, which automatically sets the lsp-client to ~lsp~ or ~eglot~, depending on the ~init.el~ file.
 
-#+begin_src elisp :tangle nil
+#+begin_src elisp :tangle no
 (add-hook 'vue-mode-hook #'lsp!)
 #+end_src
 
@@ -1535,6 +1529,11 @@ For now, we will only activate this mode for files named =Brewfile= or files wit
   (setq mmm-global-mode 'maybe))
 #+end_src
 
+**** Nix
+
+#+begin_src elisp
+(setq lsp-nix-nil-auto-eval-inputs nil)
+#+end_src
 *** Modes
 
 This section concerns the configuration specific to modes.

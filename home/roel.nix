@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
 
@@ -27,6 +27,7 @@
       jetbrains.phpstorm
       vscode
       vscodium
+      nix-tree
     ]);
 
     file = {
@@ -36,14 +37,6 @@
     sessionPath = [
 
     ];
-
-    sessionVariables = {
-      EDITOR = "emacs";
-    };
-
-    shellAliases = {
-
-    };
   };
 
   programs = {
@@ -62,6 +55,7 @@
     ripgrep.enable = true;
     zsh.enable = true;
     emacs.enable = true;
+    doomemacs.enable = true;
     htop.enable = true;
   };
 
@@ -70,16 +64,62 @@
     userName = "roelhem";
     userEmail = "ik@roelweb.com";
     includes = [];
+    ignores = [
+      # nix
+      "/.direnv/"
+      "/.devenv/"
+      "/result"
+      # mac
+      ".DS_Store"
+      ".AppleDouble"
+      ".LSOverride"
+      "Icon"
+      "._*"
+      ".DocumentRevisions-V100"
+      ".fseventsd"
+      ".Spotlight-V100"
+      ".TemporaryItems"
+      ".Trashes"
+      ".VolumeIcon.icns"
+      ".com.apple.timemachine.donotpresent"
+      ".AppleDB"
+      ".AppleDesktop"
+      "Network Trash Folder"
+      "Temporary Items"
+      ".apdisk"
+      "*.icloud"
+      # linux
+      "*~"
+      ".fuse_hidden*"
+      ".directory"
+      ".Trash-*"
+      ".nfs*"
+      # windows
+      "Thumbs.db"
+      "Thumbs.db:encryptable"
+      "ehthumbs.db"
+      "ehthumbs_vista.db"
+      "*.stackdump"
+      "[Dd]esktop.ini"
+      "$RECYCLE.BIN/"
+      # vscode
+      ".vscode/*"
+      "!.vscode/settings.json"
+      "!.vscode/tasks.json"
+      "!.vscode/launch.json"
+      "!.vscode/extensions.json"
+      "!.vscode/*.code-snippets"
+    ];
   };
 
   # Install emacs.
-  programs.emacs = {
-    extraPackages = epkgs: (with epkgs; [
-      nix-mode
-      magit
-    ]);
-    # extraConfig
-  };
+  # programs.emacs = {
+  #   # extraPackages = epkgs: (with epkgs; [
+  #   #   nix-mode
+  #   #   magit
+  #   # ]);
+  #   # extraConfig
+  # };
 
   programs.broot = {
     enableBashIntegration = true;
@@ -114,6 +154,18 @@
   # dircolors
   # eza
   # fastfetch
+
+  languages = {
+    nix = {
+      enable = true;
+      lsp.enable = true;
+    };
+
+    dotnet = {
+      enable = true;
+      lsp.enable = true;
+    };
+  };
 
   editorconfig = {
     enable = true;

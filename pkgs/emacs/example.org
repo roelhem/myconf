@@ -1,0 +1,9 @@
+#+title: Example
+#+property: header-args:elisp :results silent :export code
+#+property: header-args :tangle no :mkdirp yes :comments both :results silent :eval no-export
+
+#+startup: fold
+
+#+begin_src elisp :results silent :tangle "test.el"
+(message "hi!")
+#+end_src
