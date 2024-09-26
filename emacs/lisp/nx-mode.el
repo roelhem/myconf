@@ -34,7 +34,7 @@ This is essentially a map from workspace roots to project names.")
   "Path the the nx workspace root.")
 
 (defun nx--workspace-project-list-cache-clear-all ()
-  "Clears all nx projects from `nx--project-list-cache'"
+  "Clears all nx projects from `nx--project-list-cache'."
   (clrhash nx--workspace-project-list-cache))
 
 (defun nx--workspace-project-list-cache-clear (workspace)
@@ -79,6 +79,12 @@ With INVALIDATE-CACHE invalidates the cache first."
 (defun nx--workspace-p (project)
   "Checks whether PROJECT is an nx workspace."
   (nx--workspace-root-p (project-root project)))
+
+(defun nx-clear-emacs-caches ()
+  "Clears all nx caches."
+  (interactive)
+  (nx--workspace-project-list-cache-clear-all)
+  (clrhash nx--workspace-project-config-cache))
 
 (defun nx-known-workspace-roots ()
   "Lists the known nx workspace roots."

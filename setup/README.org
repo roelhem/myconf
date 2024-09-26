@@ -40,39 +40,6 @@ ln -s "$MYCONFDIR/emacs/doom" "$DOOMDIR"
 
 * Dependencies
 
-** Dependency Managers
-
-*** Volta
-
-**** Install =volta=
-
-:PROPERTIES:
-:idempotent: t
-#+begin_src shell
-curl https://get.volta.sh | bash -s -- --skip-setup
-#+end_src
-
-**** Init environment variables
-
-#+begin_src shell
-export VOLTA_HOME=${VOLTA_HOME-"$HOME/.volta"}
-export PATH="$VOLTA_HOME/bin:$PATH"
-#+end_src
-
-**** Init completions
-
-#+begin_src shell
-if [ type volta 2> /dev/null ]; then
-    volta completions
-fi
-#+end_src
-
-**** Install latest stable version of node
-
-#+begin_src shell
-volta install node pnpm yarn
-#+end_src
-
 ** Dependencies
 
 *** =brew=

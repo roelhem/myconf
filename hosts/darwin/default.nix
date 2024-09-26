@@ -12,36 +12,39 @@
     gc = {
       user = "root";
       automatic = true;
-      interval = { Weekday = 0; Hour = 4; Minute = 0; };
+      interval = {
+        Weekday = 0;
+        Hour = 4;
+        Minute = 0;
+      };
       options = "--delete-older-than 30d";
     };
   };
 
   # environment = {
-    # systemPackages = with pkgs; [
-    #   curl
-    #   wget
-    #   git
-    #   openssl_3_2
-    # ];
+  # systemPackages = with pkgs; [
+  #   curl
+  #   wget
+  #   git
+  #   openssl_3_2
+  # ];
 
-    # systemPath = [];
+  # systemPath = [];
 
-    # etc = {};
+  # etc = {};
 
-    # launchAgents = {};
+  # launchAgents = {};
 
-    # userLaunchAgents = {};
+  # userLaunchAgents = {};
 
-    # launchDaemons = {};
+  # launchDaemons = {};
 
-    # shellAliases = {};
+  # shellAliases = {};
 
-    # shells = with pkgs; [];
+  # shells = with pkgs; [];
 
-    # variables = {};
+  # variables = {};
   # };
-
 
   services = {
     nix-daemon.enable = true;
@@ -71,7 +74,7 @@
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";
-    global = {};
+    global = { };
 
     casks = [
       "another-redis-desktop-manager"
@@ -79,15 +82,15 @@
       "azure-data-studio"
       "microsoft-azure-storage-explorer"
     ];
-    caskArgs = {};
+    caskArgs = { };
 
-    masApps = {};
+    masApps = { };
 
-    whalebrews = [];
+    whalebrews = [ ];
   };
 
-  launchd = {};
-  networking = {};
+  launchd = { };
+  networking = { };
 
   users = {
     users.roel = {
@@ -106,10 +109,8 @@
   };
 
   security = {
-    pki.certificateFiles = [];
+    pki.certificateFiles = [ ];
   };
-
-
 
   system = {
     stateVersion = 4;
@@ -150,15 +151,11 @@
       };
 
       dock = {
-        autohide = true;
+        autohide = false;
         expose-animation-duration = 0.5;
         orientation = "bottom";
-        persistent-apps = [
-          "${pkgs.iterm2}/Applications/iTerm2.app"
-        ];
-        persistent-others = [
-          "~/Downloads"
-        ];
+        persistent-apps = [ "${pkgs.iterm2}/Applications/iTerm2.app" ];
+        persistent-others = [ "~/Downloads" ];
         show-process-indicators = true;
         show-recents = true;
         static-only = true;

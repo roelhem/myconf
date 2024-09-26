@@ -11,5 +11,6 @@ cabal.project.local
 # Created by a bug somewhere in emacs... Should fix this later...
 /nil
 /out
+/tmp
 
 /dotfiles/.emacs.d

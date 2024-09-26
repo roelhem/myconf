@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   config = {
@@ -6,6 +6,7 @@
       curl
       wget
       git
+      gnugrep
       openssl_3_2
     ];
   };

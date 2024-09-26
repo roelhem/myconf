@@ -1,0 +1,154 @@
+#+TITLE: Software Developer and Musician
+#+AUTHOR: Roel Hemerik
+#+email: roelhemerik@icloud.com
+#+ADDRESS: Zomerstraat 2A
+#+ADDRESS: 1109AW Amsterdam
+#+MOBILE: (+31) 6 43 941 490
+#+GITHUB: [[https://github.com/roelhem][roelhem]]
+#+YOUTUBE: [[https://www.youtube.com/@roelhemerik5715][@roelhemerik5715]]
+#+LATEX_HEADER: \geometry{left=1cm,right=9cm,marginparwidth=6.8cm,marginparsep=1.2cm,top=1.25cm,bottom=1.25cm}
+#+options: tags:nil
+
+* Config :noexport:
+
+** Load the library
+
+#+begin_src elisp :results silent
+(use-package! ox-altacv
+  :load-path "~/.doom.d/.local/straight/build-29.4/org-cv/"
+  :init (require 'ox-altacv))
+#+end_src
+
+
+** Building this file
+#+begin_src elisp :results silent
+(let* ((outDir (expand-file-name "~/cv/"))
+       (baseName (concat outDir "altacv-2"))
+       (texPath (concat baseName ".tex"))
+       (pdfPath (concat baseName ".pdf")))
+  (make-directory outDir t)
+  (org-export-to-file 'altacv texPath)
+  (org-latex-compile texPath))
+#+end_src
+
+* CV Header :noexport:
+
+** Photo & Tagline
+:ignore:
+
+Roel Hemerik
+
+** Personal info
+:ignore:
+
+- Phone: +31 6 43 941 490
+# - GitHub: [[roelhem][roelhem]]
+# -  YouTube: [[https://www.youtube.com/@roelhemerik5715][@roelhemerik5715]]
+
+* Summary :ignore:
+
+Creative and proactive with an infinite supply of enthusiasm.
+Loves learning new skills, teaching and performing on stage.
+Enjoys trying new approaches with a healthy distrust of new "industry standards".
+Determined to carry out projects from idea to perfection.
+Proficient in western music theory, data modelling, designing distributed backends
+(and corresponding frontend libraries), writing dev-tools to improve code quality
+and maintaining complex build pipelines.
+
+* Work Experience :cventries:
+
+** Software Developer :cventry:
+:PROPERTIES:
+:FROM: 2019
+:LOCATION: Rotterdam
+:EMPLOYER: Shared B.V.
+:END:
+
+- Migrated all existing cloud infrastructure from AWS to Azure.
+- Designed and implemented telemetry systems for several companies and thaught clients how to
+  interpret the collected data.
+- Formulated the company-wide programming conventions to build maintainable apps while still
+  allowing collegues to creatively express themselves in the code they write.
+- Re-designed a monolithic web-app into a distributed cloud service which halved the average response
+  time.
+- Led a team of developers in a 3 year project to build a custom cloud service for
+  food-manufacturers that filters relevant EU food laws based on their procurement lists.
+- Created tools to move data from huge and messy excel sheets into normalized SQL databases
+  in a provably correct way (using Haskell).
+
+** Video Content Creator :cventry:
+:PROPERTIES:
+:FROM: 2018
+:TO: 2019
+:LOCATION: Delft
+:EMPLOYER: Meer 3D B.V.
+:END:
+
+# - Created video-manuals about using and modifying 3D printers.
+- Helped with hacking microcontrollers for modified 3D printers.
+
+** Stage Manager :cventry:
+:PROPERTIES:
+:FROM: 2013
+:TO: 2019
+:LOCATION: Delft
+:EMPLOYER: O.J.V. de Koornbeurs
+:END:
+
+- Invited bands from Spain, Italy, Greece, Lebanon and Israël to play at this venue, who
+  still refer to these gigs as most memorable.
+- Organized /KelderJam/, the best monthly jam-session of Delft, enjoyed by both
+  professional and beginner musicians.
+
+* Education :cventries:
+
+** MSc Mathematical Sciences - Logic (unfinished) :cvschool:
+:PROPERTIES:
+:FROM: 2020
+:TO: 2022
+:SCHOOL: University of Utrecht
+:END:
+
+- Followed almost all math-courses from the /MSc Logic/ at the
+  /University of Amsterdam/ as a guest student.
+
+** BSc Applied Mathematics :cvschool:
+:PROPERTIES:
+:FROM: 2013
+:TO: 2019
+:SCHOOL: TU Delft
+:END:
+
+- Minor focussed on signal processing.
+
+* Skills :cvskills:
+
+
+- Haskell
+- PHP
+- C#
+- JavaScript (TS, PureScript, Vue)
+- Python
+- C++ (embedded)
+- Nix
+- Emacs Lisp
+- PostgreSQL
+- Redis
+- Azure
+- Grafana
+- NX
+- Docker
+- GitHub Actions
+
+* Music
+
+- *Instruments:* Guitar, Organ, Harmonica Flute, Cajon, Live-coding ([[https://tidalcycles.org][Tidal Cycles]])
+- *Bands:* [[https://www.youtube.com/@shadowofthunder4477][Shadow of Thunder]] (2013-2016), Galos (2017-2019, improv-only band)
+- *Favorite Composer:* Jean-Philippe Rameau
+
+* Other Interests
+
+- Intuitionistic Logic
+- Category Theory
+- Type Theory
+- Micro-electronics

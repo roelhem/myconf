@@ -1,0 +1,16 @@
+Name: dhall-elisp
+Version: 0.0.1.0
+Cabal-Version: >=1.10
+Build-Type: Simple
+
+Library
+  Hs-Source-Dirs: src
+  Build-Depends:
+    base >= 4.11.0.0 && < 5 ,
+    data-fix < 0.4 ,
+    dhall >= 1.42 && < 1.43 ,
+    text >= 0.8.0.0 && < 2.1
+  Exposed-Modules:
+    Dhall.Elisp
+  GHC-Options: -Wall
+  Default-Language: Haskell2010

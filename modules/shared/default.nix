@@ -1,12 +1,14 @@
-{ pkgs, nixpkgsOverlays, ... }: {
+{
+  pkgs,
+  nixpkgsOverlays,
+  defaultUser,
+  ...
+}:
+{
 
-  imports = [
-    ./essentials.nix
-  ];
+  imports = [ ./essentials.nix ];
 
-  home-manager.sharedModules = [
-    ../home-manager
-  ];
+  home-manager.sharedModules = [ ../home-manager ];
 
   nix.settings = {
     experimental-features = "nix-command flakes repl-flake";
@@ -15,7 +17,7 @@
     extra-nix-path = "nixpkgs=flake:nixpkgs";
     trusted-users = [
       "@admin"
-      "roel"
+      defaultUser.name
     ];
     substituters = [
       "https://nix-community.cachix.org"

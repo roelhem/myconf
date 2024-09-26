@@ -6,29 +6,30 @@
   home.stateVersion = "24.05";
 
   home = {
-    packages = (with pkgs; [
-      upx
-      shfmt
-      azure-cli
-      azure-functions-core-tools
-      graphviz
-      gnuplot
-      imagemagick
-      pgadmin4-desktopmode
-      # postman
-      openscad
-      prusa-slicer
-      # warp-terminal
-      powershell
-      iterm2
-      teams
-      # discord
-      # frescobaldi
-      jetbrains.phpstorm
-      vscode
-      vscodium
-      nix-tree
-    ]);
+    packages = (
+      with pkgs;
+      [
+        upx
+        azure-cli
+        azure-functions-core-tools
+        graphviz
+        gnuplot
+        imagemagick
+        pgadmin4-desktopmode
+        # postman
+        prusa-slicer
+        # warp-terminal
+        powershell
+        iterm2
+        teams
+        # discord
+        # frescobaldi
+        jetbrains.phpstorm
+        vscode
+        vscodium
+        nix-tree
+      ]
+    );
 
     file = {
 
@@ -49,7 +50,6 @@
     gpg.enable = true;
     password-store.enable = true;
     home-manager.enable = true;
-    jq.enable = true;
     neovim.enable = true;
     nix-index.enable = true;
     ripgrep.enable = true;
@@ -57,69 +57,16 @@
     emacs.enable = true;
     doomemacs.enable = true;
     htop.enable = true;
+    editorconfig.enable = true;
+    openscad.enable = true;
+    openscad.lsp.enable = true;
   };
 
   # Install git.
   programs.git = {
     userName = "roelhem";
     userEmail = "ik@roelweb.com";
-    includes = [];
-    ignores = [
-      # nix
-      "/.direnv/"
-      "/.devenv/"
-      "/result"
-      # mac
-      ".DS_Store"
-      ".AppleDouble"
-      ".LSOverride"
-      "Icon"
-      "._*"
-      ".DocumentRevisions-V100"
-      ".fseventsd"
-      ".Spotlight-V100"
-      ".TemporaryItems"
-      ".Trashes"
-      ".VolumeIcon.icns"
-      ".com.apple.timemachine.donotpresent"
-      ".AppleDB"
-      ".AppleDesktop"
-      "Network Trash Folder"
-      "Temporary Items"
-      ".apdisk"
-      "*.icloud"
-      # linux
-      "*~"
-      ".fuse_hidden*"
-      ".directory"
-      ".Trash-*"
-      ".nfs*"
-      # windows
-      "Thumbs.db"
-      "Thumbs.db:encryptable"
-      "ehthumbs.db"
-      "ehthumbs_vista.db"
-      "*.stackdump"
-      "[Dd]esktop.ini"
-      "$RECYCLE.BIN/"
-      # vscode
-      ".vscode/*"
-      "!.vscode/settings.json"
-      "!.vscode/tasks.json"
-      "!.vscode/launch.json"
-      "!.vscode/extensions.json"
-      "!.vscode/*.code-snippets"
-    ];
   };
-
-  # Install emacs.
-  # programs.emacs = {
-  #   # extraPackages = epkgs: (with epkgs; [
-  #   #   nix-mode
-  #   #   magit
-  #   # ]);
-  #   # extraConfig
-  # };
 
   programs.broot = {
     enableBashIntegration = true;
@@ -130,13 +77,6 @@
     enableBashIntegration = true;
     enableZshIntegration = true;
     nix-direnv.enable = true;
-  };
-
-  programs.fd = {
-    ignores = [
-      ".git/"
-      "*.bak"
-    ];
   };
 
   programs.nix-index = {
@@ -156,30 +96,47 @@
   # fastfetch
 
   languages = {
-    nix = {
-      enable = true;
-      lsp.enable = true;
-    };
-
-    dotnet = {
-      enable = true;
-      lsp.enable = true;
-    };
+    markdown.enable = true;
+    python.enable = true;
+    julia.enable = true;
+    dotnet.enable = true;
+    nix.enable = true;
+    agda.enable = true;
+    coq.enable = true;
+    haskell.enable = true;
+    purescript.enable = true;
+    typescript.enable = true;
+    php.enable = true;
+    tex.enable = true;
+    vue.enable = true;
+    sh.enable = true;
+    go.enable = true;
+    nginx.enable = true;
+    idris2.enable = true;
+    cc.enable = true;
+    jq.enable = true;
+    lua.enable = true;
+    perl.enable = true;
+    vim.enable = true;
+    xml.enable = true;
+    yaml.enable = true;
+    toml.enable = true;
+    json.enable = true;
+    dhall.enable = true;
+    zig.enable = true;
+    java.enable = true;
+    kotlin.enable = true;
+    common-lisp.enable = true;
+    clojure.enable = true;
+    racket.enable = true;
+    scheme.enable = true;
+    ocaml.enable = true;
+    faust.enable = true;
+    dockerfile.enable = true;
+    sml.enable = false;
   };
 
-  editorconfig = {
-    enable = true;
-    settings = {
-      "*" = {
-        charset = "utf-8";
-        end_of_line = "lf";
-        trim_trailing_whitespace = true;
-        insert_final_newline = true;
-        indent_style = "space";
-        indent_size = 4;
-      };
-    };
-  };
+  editorconfig.enable = true;
 
   manual = {
     html.enable = true;
@@ -188,8 +145,7 @@
   };
 
   targets.darwin = {
-    defaults = {
-
-    };
+    search = "Google";
+    defaults = { };
   };
 }

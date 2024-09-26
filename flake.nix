@@ -4,6 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # My secrets
+    # mysecrets = {
+    #   url = "git+ssh://git@github.com/roelhem/mysecrets";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
+
     # darwin
     nix-darwin = {
       url = "github:LnL7/nix-darwin";
@@ -36,7 +42,9 @@
     };
 
     # Emacs
-    emacs-overlay = { url = "github:nix-community/emacs-overlay"; };
+    emacs-overlay = {
+      url = "github:nix-community/emacs-overlay";
+    };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
       flake = false;
@@ -46,45 +54,66 @@
       flake = false;
     };
 
-    # Flake compatibility
+    # Flake backwards compatibility
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, home-manager
-    , nix-homebrew, emacs-overlay, homebrew-emacs-plus, ... }:
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      flake-utils,
+      nix-darwin,
+      home-manager,
+      nix-homebrew,
+      emacs-overlay,
+      homebrew-emacs-plus,
+      ...
+    }:
     let
       lib = nixpkgs.lib;
-      linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
-      darwinSystems = [ "x86_64-darwin" "aarch64-darwin" ];
+      linuxSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+      darwinSystems = [
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
 
       overlays = [
         emacs-overlay.overlays.default
+        self.overlays.me
         self.overlays.emacs
         self.overlays.myconf
       ];
 
       # System-dependent bootstrap.
-      forSystem = system: f:
-        f (let
-          pkgs = import nixpkgs { inherit system overlays; };
+      forSystem =
+        system: f:
+        f (
+          let
+            pkgs = import nixpkgs { inherit system overlays; };
 
-          fromFlake = flake: {
-            checks = flake.checks.${system};
-            packages = flake.packages.${system};
-            apps = flake.apps.${system};
-            devShells = flake.devShells.${system};
-            formatter = flake.${system};
-            legacyPackages = flake.legacyPackages.${system};
-          };
-        in {
-          inherit system pkgs;
-          self = fromFlake self;
-          nix-darwin = fromFlake nix-darwin;
-          nixpkgs = fromFlake nixpkgs;
-        });
+            fromFlake = flake: {
+              checks = flake.checks.${system};
+              packages = flake.packages.${system};
+              apps = flake.apps.${system};
+              devShells = flake.devShells.${system};
+              formatter = flake.${system};
+              legacyPackages = flake.legacyPackages.${system};
+            };
+          in
+          {
+            inherit system pkgs;
+            self = fromFlake self;
+            nix-darwin = fromFlake nix-darwin;
+            nixpkgs = fromFlake nixpkgs;
+          }
+        );
       forSystems = xs: f: lib.genAttrs xs (system: forSystem system f);
 
       # System definitions.
@@ -92,45 +121,59 @@
       forDarwinSystems = forSystems darwinSystems;
       forAllSystems = forSystems (linuxSystems ++ darwinSystems);
 
-    in {
+    in
+    {
+      # Formatter
+      formatter = forAllSystems ({ pkgs, ... }: pkgs.nixfmt-rfc-style);
 
       # Packages
-      packages = forAllSystems ({ pkgs, nixpkgs, nix-darwin, ... }: {
-        inherit (pkgs) doomemacs emacs-plus;
-
-        example = pkgs.orgTangleFile ./config.org { };
-
-        bootstrap = pkgs.writeShellScriptBin "bootstrap"
-          "${nix-darwin.packages.darwin-rebuild}/bin/darwin-rebuild switch --flake ~/.myconf";
-      });
+      packages = forAllSystems (
+        {
+          pkgs,
+          nixpkgs,
+          nix-darwin,
+          ...
+        }:
+        {
+          inherit (pkgs) doomemacs emacs-plus;
+          me = pkgs.dhallPackages.me;
+          switch = pkgs.myconf-switch;
+        }
+      );
 
       # Devshells
-      devShells = forAllSystems ({ pkgs, self, ... }:
-        with pkgs; {
-          doomemacs = mkShell { buildInputs = [ doomemacs ]; };
-        });
+      devShells = forAllSystems (
+        { pkgs, self, ... }: with pkgs; { doomemacs = mkShell { buildInputs = [ doomemacs ]; }; }
+      );
 
       # Apps
-      apps = forDarwinSystems ({ self, ... }: {
-        emacs = {
-          type = "app";
-          program =
-            "${self.packages.emacs}/Applications/Emacs.app/Contents/MacOS/Emacs";
-        };
+      apps =
+        forDarwinSystems (
+          { self, ... }:
+          {
+            emacs = {
+              type = "app";
+              program = "${self.packages.emacs}/Applications/Emacs.app/Contents/MacOS/Emacs";
+            };
 
-        bootstrap = {
-          type = "app";
-          program = "${self.packages.bootstrap}/bin/bootstrap";
-        };
-      }) // forLinuxSystems ({ ... }:
-        {
+            switch = {
+              type = "app";
+              program = "${self.packages.switch}/bin/myconf-switch";
+            };
+          }
+        )
+        // forLinuxSystems (
+          { ... }:
+          {
 
-        });
+          }
+        );
 
       # Overlays
       overlays = {
         emacs = import ./overlays/emacs.nix inputs;
         myconf = import ./overlays/myconf.nix inputs;
+        me = import ./overlays/me.nix inputs;
       };
 
       # NixOS
@@ -144,6 +187,11 @@
           system = "x86_64-darwin";
           specialArgs = {
             inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
+            me = self.packages.x86_64-darwin.me;
+            defaultUser = {
+              name = "roel";
+            };
+            nixformatter = self.formatter.x86_64-darwin;
             nixpkgsOverlays = overlays;
           };
           modules = [

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -6,17 +11,40 @@ let
 
   cfg = config.languages.nix;
 
-  homePackages = optional cfg.enable pkgs.nil;
+  mkNixOptions = package: {
+    enable = mkOption {
+      type = types.bool;
+      default = cfg.enable;
+    };
 
-in {
+    package = mkOption {
+      type = types.package;
+      default = package;
+    };
+  };
+
+  nixfmt = cfg.nixfmt.package;
+  nil = cfg.nil.package;
+  nixd = cfg.nixd.package;
+
+in
+{
 
   options.languages.nix = {
     enable = mkEnableOption "{command}`nix` language";
-    lsp.enable = mkEnableOption "{command}`nix` language server";
+
+    nixfmt = mkNixOptions pkgs.nixfmt-rfc-style;
+    nil = mkNixOptions pkgs.nil;
+    nixd = mkNixOptions pkgs.nixd;
   };
 
   config = {
-    home.packages = homePackages;
+    home.packages =
+      optional cfg.nil.enable nil ++ optional cfg.nixd.enable nixd ++ optional cfg.nixfmt.enable nixfmt;
+
+    programs.emacs.setq =
+      mkIf cfg.nixfmt.enable { nix-nixfmt-bin = "${nixfmt}/bin/nixfmt"; }
+      // mkIf cfg.nixd.enable { lsp-nix-nixd-server-path = "${nixd}/bin/nixd"; };
   };
 
 }

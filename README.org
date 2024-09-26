@@ -15,55 +15,14 @@
 - =MANPATH=
 - =INFOPATH=
 
+* Big dirs
+
+- =~/.cabal=
+- =~/.cache=
+- =~/.cocoapods=
+
 * Initialization Steps
 ** MacOS
-
-
-*** Brew...
-
-#+begin_src shell
-
-#+end_src
-
-=/usr/local/sbin= needs to be added to the path variable.
-
-**** Define brew environment variables
-
-#+begin_src shell
-eval $(brew shellenv)
-#+end_src
-
-*** Nix
-
-**** Intall =nix= package manager
-
-#+begin_src shell
-sh <(curl -L https://nixos.org/nix/install)
-#+end_src
-
-*** Node
-
-**** Install =nvm=
-
-#+begin_src shell
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-#+end_src
-
-/Source: [[https://github.com/nvm-sh/nvm#installing-and-updating][Nvm Docs: Installing and Updating]]/
-
-*** GHC/Haskell
-
-**** install =ghcup=
-
-#+begin_src shell
-curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-#+end_src
-
-**** cabal packages
-
-#+begin_src shell
-cabal install Agda dhall
-#+end_src
 
 *** OCaml/Opam
 

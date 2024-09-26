@@ -7,6 +7,6 @@ let
   };
 
 in
-  {
-    inherit (myconfPkgs) myconf-switch;
-  }
+{
+  inherit (myconfPkgs) myconf-switch;
+}

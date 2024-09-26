@@ -1,22 +1,27 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
-    cfg = config.programs.doomemacs;
+  cfg = config.programs.doomemacs;
 
-    doomDir = cfg.doomDir;
-    localDir = cfg.localDir;
+  doomDir = cfg.doomDir;
+  localDir = cfg.localDir;
 
-    doomemacs = pkgs.doomemacs.override {
-      inherit doomDir localDir;
-      emacs = cfg.package;
-    };
+  doomemacs = pkgs.doomemacs.override {
+    inherit doomDir localDir;
+    emacs = cfg.package;
+  };
 
-    doomConfig = pkgs.orgTangleFile ../../../config.org {};
+  doomConfig = pkgs.orgTangleFile ../../../../config.org { };
 
-
-in {
+in
+{
   options = {
     programs.doomemacs = {
       enable = mkEnableOption "Enable doomemacs";
@@ -51,17 +56,22 @@ in {
   };
 
   config = mkIf cfg.enable {
-    home.packages = [ doomemacs ];
+    home.packages = [
+      doomemacs
+      pkgs.coreutils-prefixed
+    ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.pngpaste ] else [ ]);
 
     home.activation = {
-      doomSync = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      doomSync = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p ${doomDir}
         cp -f ${doomConfig}/config.el ${doomDir}/config.el
         cp -f ${doomConfig}/packages.el ${doomDir}/packages.el
 
         ${doomemacs}/bin/doom sync
-        '';
+      '';
     };
+
+    languages.cmake.enable = true;
 
     programs.doomemacs.finalPackage = doomemacs;
   };

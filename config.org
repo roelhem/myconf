@@ -52,6 +52,12 @@ For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configu
 
 (package! kurecolor)
 
+(package! org-cv
+  :recipe (:type git
+           :host gitlab
+           :repo "Titan-C/org-cv"
+           :files ("*.el")))
+
 (package! unison-ts-mode
   :recipe (:type git
            :host github
@@ -91,6 +97,14 @@ This section defines the ~config.el~ file.
 #+begin_src elisp
 (setq user-full-name "Roel Hemerik"
       user-mail-address "roel@shared.nl")
+#+end_src
+
+**** CV
+
+#+begin_src elisp :tangle no
+(use-package! ox-altacv
+  :load-path "~/.doom.d/.local/straight/build-29.4/org-cv/"
+  :init (require 'ox-altacv))
 #+end_src
 
 *** Tuning
@@ -834,6 +848,14 @@ Make the hints from =which-key= more readable by replacing common prefixes by sy
       "h r l" #'+lsp-restart)
 #+end_src
 
+**** LSP describe session
+
+#+begin_src elisp
+(map! :after lsp-mode
+      :leader
+      "h s-l" #'lsp-describe-session)
+#+end_src
+
 **** Format buffer
 
 #+begin_src elisp
@@ -844,14 +866,6 @@ Make the hints from =which-key= more readable by replacing common prefixes by sy
 *** Frames
 
 **** MacOS Fullscreen
-
-By default, emacs uses a full-screen mode that works different from how other application-windows will be put in full-screen. It was set like this as most people didn't like the standard window-manager of MacOS.
-
-Problem is, I do like it and I do not want to to deal with strange full-screen windows that block things behind them. Also, I like emacs to open in full-screen by default.
-
-#+begin_src elisp
-(add-to-list 'initial-frame-alist '(fullscreen . fullscreen))
-#+end_src
 
 And after I toggled full-screen, I want the initial window to be as large as possible.
 
@@ -1432,7 +1446,7 @@ The lsp formatter is conflicting with prettier. Better to always use prettier if
 
 This uses the ~lsp!~ function from doom-emacs, which automatically sets the lsp-client to ~lsp~ or ~eglot~, depending on the ~init.el~ file.
 
-#+begin_src elisp :tangle no
+#+begin_src elisp
 (add-hook 'vue-mode-hook #'lsp!)
 #+end_src
 

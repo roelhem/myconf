@@ -1,3 +1,0 @@
-let Color = {}
-
-in { Color }

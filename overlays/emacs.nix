@@ -1,125 +1,170 @@
 inputs: final: prev:
 let
 
-  elisp = final.callPackage ../pkgs/emacs/elisp.nix {};
+  elisp = final.callPackage ../pkgs/emacs/elisp.nix { };
 
-  org-tangle = final.callPackage ../pkgs/emacs/org-tangle.nix {};
+  org-tangle = final.callPackage ../pkgs/emacs/org-tangle.nix { };
+
+  emacs-zsh-plugin =
+    final.callPackage (final.lib.makeOverridable (import ../pkgs/emacs-zsh-plugin))
+      { };
+
+  emacs-launch-editor =
+    final.callPackage (final.lib.makeOverridable (import ../pkgs/emacs/launch-editor.nix))
+      { };
 
   lib = prev.lib // {
     elisp = {
-      inherit (elisp) toElisp toElispWith toSetq toSetqWith;
+      inherit (elisp)
+        toElisp
+        toElispWith
+        toSetq
+        toSetqWith
+        ;
     };
   };
 
-  forceDarwinXWidgets = drv: drv.overrideAttrs (old:
-    if drv.stdenv.isDarwin
-    then {
-      configureFlags = lib.lists.remove "--without-xwidgets" old.configureFlags ++ ["--with-xwidgets"];
+  forceDarwinXWidgets =
+    drv:
+    drv.overrideAttrs (
+      old:
+      if drv.stdenv.isDarwin then
+        {
+          configureFlags = lib.lists.remove "--without-xwidgets" old.configureFlags ++ [ "--with-xwidgets" ];
 
-      buildInputs = old.buildInputs ++ (with final.darwin.apple_sdk.frameworks; [
-        QuartzCore
-        WebKit
-      ]);
-    }
-    else {});
+          buildInputs =
+            old.buildInputs
+            ++ (with final.darwin.apple_sdk.frameworks; [
+              QuartzCore
+              WebKit
+            ]);
+        }
+      else
+        { }
+    );
 
   # Replace map icon.
-  replaceAppIconWith = icns: drv: drv.overrideAttrs(old: {
-    postInstall = old.postInstall + ''
+  replaceAppIconWith =
+    icns: drv:
+    drv.overrideAttrs (old: {
+      postInstall =
+        old.postInstall
+        + ''
 
-      if [ -f $out/Applications/Emacs.app/Contents/Resources/Emacs.icns ]; then
-         cp -f ${icns} $out/Applications/Emacs.app/Contents/Resources/Emacs.icns
-      fi
+          if [ -f $out/Applications/Emacs.app/Contents/Resources/Emacs.icns ]; then
+             cp -f ${icns} $out/Applications/Emacs.app/Contents/Resources/Emacs.icns
+          fi
 
-      '';
-  });
+        '';
+    });
 
   emacsPlusIcon = icns: inputs.homebrew-emacs-plus.outPath + "/icons/" + icns + ".icns";
 
   # Emacs plus patches.
-  emacsPlusPatches = with builtins;
+  emacsPlusPatches =
+    with builtins;
     let
       patchesDirPath = inputs.homebrew-emacs-plus.outPath + "/patches";
 
-      versionToDirName = version: let
+      versionToDirName =
+        version:
+        let
           majorVersion = lib.versions.major version;
-      in "emacs-" + majorVersion;
+        in
+        "emacs-" + majorVersion;
 
-      isSupportedVersion = version: elem
-        (versionToDirName version)
-        (attrNames (readDir patchesDirPath));
+      isSupportedVersion = version: elem (versionToDirName version) (attrNames (readDir patchesDirPath));
 
-      dirPathForVersion = version:
-        patchesDirPath + "/" + (versionToDirName version);
+      dirPathForVersion = version: patchesDirPath + "/" + (versionToDirName version);
 
-      allPatchNamesForVersion = version:
-        attrNames (readDir (dirPathForVersion version));
+      allPatchNamesForVersion = version: attrNames (readDir (dirPathForVersion version));
 
-      patchForVersion = version: patchName: let
+      patchForVersion =
+        version: patchName:
+        let
           patchFilePath = (dirPathForVersion version) + "/" + patchName;
         in
-          final.writeText patchName (readFile patchFilePath);
+        final.writeText patchName (readFile patchFilePath);
 
       _patchesForVersion = version: map (patchForVersion version);
 
-      patchesForVersion = version: patchNames: let
+      patchesForVersion =
+        version: patchNames:
+        let
           allPatchNames = allPatchNamesForVersion version;
           existingPatchNames = filter (x: elem x allPatchNames) patchNames;
         in
-          _patchesForVersion version existingPatchNames;
+        _patchesForVersion version existingPatchNames;
 
       allPatchesForVersion = version: _patchesForVersion version (allPatchNamesForVersion version);
 
-      coEmacsToVersion = f: empty: emacs:
-        if emacs.stdenv.isDarwin && isSupportedVersion emacs.version
-        then f emacs.version
-        else empty;
+      coEmacsToVersion =
+        f: empty: emacs:
+        if emacs.stdenv.isDarwin && isSupportedVersion emacs.version then f emacs.version else empty;
 
-    in {
-      inherit patchesForVersion
+    in
+    {
+      inherit
+        patchesForVersion
         allPatchNamesForVersion
         allPatchesForVersion
-        emacsVersions;
+        emacsVersions
+        ;
 
       forVersion = patchesForVersion;
 
-      allNamesFor = coEmacsToVersion allPatchNamesForVersion [];
-      for = coEmacsToVersion patchesForVersion (x: []);
-      allFor = coEmacsToVersion allPatchesForVersion [];
+      allNamesFor = coEmacsToVersion allPatchNamesForVersion [ ];
+      for = coEmacsToVersion patchesForVersion (x: [ ]);
+      allFor = coEmacsToVersion allPatchesForVersion [ ];
     };
 
-
-  mkEmacsPlus = baseEmacs: args@{
-      ...
-    }:
-      builtins.foldl' (drv: fn: fn drv) baseEmacs [
-        (drv: {
+  mkEmacsPlus =
+    baseEmacs:
+    args@{ ... }:
+    builtins.foldl' (drv: fn: fn drv) baseEmacs [
+      (
+        drv:
+        {
           withX = true;
           withGTK3 = true;
-        } // drv.override args)
-        forceDarwinXWidgets
-        (replaceAppIconWith (emacsPlusIcon "memeplex-slim"))
-        (drv: drv.overrideAttrs (old: {
+        }
+        // drv.override args
+      )
+      forceDarwinXWidgets
+      (replaceAppIconWith (emacsPlusIcon "memeplex-slim"))
+      (
+        drv:
+        drv.overrideAttrs (old: {
           name = "emacs-plus-" + drv.version;
 
-          patches = (old.patches or [])
-                    ++ emacsPlusPatches.for drv (args.plusPatches or emacsPlusPatches.allNamesFor baseEmacs);
-        }))
-      ];
+          patches =
+            (old.patches or [ ])
+            ++ emacsPlusPatches.for drv (args.plusPatches or emacsPlusPatches.allNamesFor baseEmacs);
+        })
+      )
+    ];
 
-  emacs-plus = lib.makeOverridable mkEmacsPlus final.emacs {};
+  emacs-plus = lib.makeOverridable mkEmacsPlus final.emacs { };
 
   # emacs-macport = prev.emacs-macport.overrideAttrs (old: {
   #   configureFlags = lib.lists.remove "--without-xwidgets" old.configureFlags ++ ["--with-xwidgets"];
   # });
 
-in {
+in
+{
 
-  inherit lib emacs-plus;
+  inherit
+    lib
+    emacs-plus
+    emacs-zsh-plugin
+    emacs-launch-editor
+    ;
 
   inherit (elisp) makeElispDerivation runElispWith runElisp;
 
   inherit (org-tangle) orgTangleFile;
 
-  inherit (final.callPackage (import ../pkgs/doomemacs inputs.doomemacs) { emacs = emacs-plus; }) doomemacs;
+  inherit (final.callPackage (import ../pkgs/doomemacs inputs.doomemacs) { emacs = emacs-plus; })
+    doomemacs
+    ;
 }

@@ -1,32 +1,42 @@
 doomemacsSource:
-{ lib
-, stdenv
-, emacs
-, makeBinaryWrapper
-, makeShellWrapper
-, less
-, git
-, doomPager ? "${less} +g"
+{
+  lib,
+  stdenv,
+  emacs,
+  makeBinaryWrapper,
+  makeShellWrapper,
+  less,
+  git,
+  doomPager ? "${less}/bin/less -R",
 }:
 
 let
 
   baseEmacs = emacs;
 
-  mkDoomEmacs = {
-    emacs ? baseEmacs,
-    pager ? doomPager,
-    doomDir ? "~/.doom.d",
-    localDir ? "~/.doom.d/.local",
-    icon ? ./icons/modern-doom3.icns,
-    ...
-  }: emacs.stdenv.mkDerivation {
+  mkDoomEmacs =
+    {
+      emacs ? baseEmacs,
+      pager ? doomPager,
+      doomDir ? "~/.doom.d",
+      localDir ? "~/.doom.d/.local",
+      icon ? ./icons/modern-doom3.icns,
+      ...
+    }:
+    emacs.stdenv.mkDerivation {
       inherit emacs;
       doomPager = pager;
       name = "doom-" + emacs.name;
       src = doomemacsSource;
-      nativeBuildInputs = [ emacs makeBinaryWrapper makeShellWrapper ];
-      phases = [ "unpackPhase" "installPhase" ];
+      nativeBuildInputs = [
+        emacs
+        makeBinaryWrapper
+        makeShellWrapper
+      ];
+      phases = [
+        "unpackPhase"
+        "installPhase"
+      ];
 
       installPhase = ''
         mkdir -p $out/doomemacs;
@@ -81,10 +91,11 @@ let
           --set-default EMACS "$baseEmacs" \
           --set-default EMACSDIR $out/doomemacs \
           --set-default DOOMLOCALDIR '~/.doom.d/.local'
-        '';
+      '';
     };
 
-in {
+in
+{
 
-  doomemacs = lib.makeOverridable mkDoomEmacs {};
+  doomemacs = lib.makeOverridable mkDoomEmacs { };
 }
