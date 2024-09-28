@@ -62,7 +62,7 @@ let
 
   # Emacs plus patches.
   emacsPlusPatches =
-    with builtins;
+    # with builtins;
     let
       patchesDirPath = inputs.homebrew-emacs-plus.outPath + "/patches";
 
@@ -73,18 +73,21 @@ let
         in
         "emacs-" + majorVersion;
 
-      isSupportedVersion = version: elem (versionToDirName version) (attrNames (readDir patchesDirPath));
+      isSupportedVersion =
+        version:
+        builtins.elem (versionToDirName version) (builtins.attrNames (builtins.readDir patchesDirPath));
 
       dirPathForVersion = version: patchesDirPath + "/" + (versionToDirName version);
 
-      allPatchNamesForVersion = version: attrNames (readDir (dirPathForVersion version));
+      allPatchNamesForVersion =
+        version: builtins.attrNames (builtins.readDir (dirPathForVersion version));
 
       patchForVersion =
         version: patchName:
         let
           patchFilePath = (dirPathForVersion version) + "/" + patchName;
         in
-        final.writeText patchName (readFile patchFilePath);
+        final.writeText patchName (builtins.readFile patchFilePath);
 
       _patchesForVersion = version: map (patchForVersion version);
 
@@ -92,7 +95,7 @@ let
         version: patchNames:
         let
           allPatchNames = allPatchNamesForVersion version;
-          existingPatchNames = filter (x: elem x allPatchNames) patchNames;
+          existingPatchNames = builtins.filter (x: builtins.elem x allPatchNames) patchNames;
         in
         _patchesForVersion version existingPatchNames;
 
@@ -104,12 +107,7 @@ let
 
     in
     {
-      inherit
-        patchesForVersion
-        allPatchNamesForVersion
-        allPatchesForVersion
-        emacsVersions
-        ;
+      inherit patchesForVersion allPatchNamesForVersion allPatchesForVersion;
 
       forVersion = patchesForVersion;
 

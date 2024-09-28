@@ -75,6 +75,8 @@
     }:
     let
       lib = nixpkgs.lib;
+
+      # Supported systems.
       linuxSystems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -182,27 +184,35 @@
       };
 
       # MacOS
-      darwinConfigurations = {
-        "roel" = nix-darwin.lib.darwinSystem {
-          system = "x86_64-darwin";
-          specialArgs = {
-            inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
-            me = self.packages.x86_64-darwin.me;
-            defaultUser = {
-              name = "roel";
+      darwinConfigurations =
+        let
+
+          mkDarwinConfig =
+            system: modules:
+            nix-darwin.lib.darwinSystem {
+              inherit system;
+              specialArgs = {
+                inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
+                me = self.packages."${system}".me;
+                defaultUser = {
+                  name = "roel";
+                };
+                nixformatter = self.formatter."${system}";
+                nixpkgsOverlays = overlays;
+              };
+              modules = [
+                home-manager.darwinModules.home-manager
+                nix-homebrew.darwinModules.nix-homebrew
+                ./modules/shared
+                ./modules/darwin
+              ] ++ modules;
             };
-            nixformatter = self.formatter.x86_64-darwin;
-            nixpkgsOverlays = overlays;
-          };
-          modules = [
-            home-manager.darwinModules.home-manager
-            nix-homebrew.darwinModules.nix-homebrew
-            ./modules/shared
-            ./modules/darwin
-            ./hosts/darwin
-          ];
+
+        in
+        {
+          "home-imac" = mkDarwinConfig "x86_64-darwin" [ ./hosts/darwin/home-imac ];
+          "home-studio" = mkDarwinConfig "aarch64-darwin" [ ./hosts/darwin/home-studio ];
         };
-      };
 
     };
 }

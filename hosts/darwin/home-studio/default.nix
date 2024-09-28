@@ -6,7 +6,6 @@
 
     settings = {
       max-jobs = "auto";
-      # auto-optimise-store = true;
     };
 
     gc = {
@@ -21,46 +20,36 @@
     };
   };
 
-  # environment = {
-  # systemPackages = with pkgs; [
-  #   curl
-  #   wget
-  #   git
-  #   openssl_3_2
-  # ];
-
-  # systemPath = [];
-
-  # etc = {};
-
-  # launchAgents = {};
-
-  # userLaunchAgents = {};
-
-  # launchDaemons = {};
-
-  # shellAliases = {};
-
-  # shells = with pkgs; [];
-
-  # variables = {};
-  # };
+  environment = {
+    systemPackages = with pkgs; [ utm ];
+  };
 
   services = {
     nix-daemon.enable = true;
+    yabai = {
+      enable = true;
+      config = {
+        layout = "bsp";
+      };
+      extraConfig = ''
+        yabai -m rule --add app="^System Settings$" manage=off
+        yabai -m rule --add app="^System Information$" manage=off
+        yabai -m rule --add app="^System Preferences$" manage=off
+        yabai -m rule --add app="Preferences$" manage=off
+        yabai -m rule --add app="Settings$" manage=off
+        yabai -m rule --add app="Systeeminstellingen" manage=off
+      '';
+    };
   };
 
   programs = {
     bash.enable = true;
-
     zsh = {
       enable = true;
       enableSyntaxHighlighting = true;
     };
-    #fish.enable
 
     nix-index.enable = true;
-
     info.enable = true;
     man.enable = true;
 
@@ -68,24 +57,18 @@
     google-chrome.enable = true;
     opera.enable = true;
     firefox.enable = true;
-    microsoft-edge.enable = true;
   };
 
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";
     global = { };
-
     casks = [
-      "another-redis-desktop-manager"
       "docker"
-      "azure-data-studio"
       "microsoft-azure-storage-explorer"
     ];
     caskArgs = { };
-
     masApps = { };
-
     whalebrews = [ ];
   };
 
@@ -104,7 +87,7 @@
     useGlobalPkgs = true;
     useUserPackages = true;
     users = {
-      roel = import ../../home/roel.nix;
+      roel = import ../../../home/roel.nix;
     };
   };
 
@@ -145,20 +128,32 @@
         AppleTemperatureUnit = "Celsius";
       };
 
+      # CustomUserPreferences = {
+      #   "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" = true;
+      # };
+
       alf = {
         allowdownloadsignedenabled = 1;
         allowsignedenabled = 1;
       };
 
       dock = {
-        autohide = false;
+        autohide = true;
         expose-animation-duration = 0.5;
         orientation = "bottom";
-        persistent-apps = [ "${pkgs.iterm2}/Applications/iTerm2.app" ];
+        persistent-apps = [
+          "${pkgs.iterm2}/Applications/iTerm2.app"
+          "/Applications/Chromium.app"
+          "/Applications/Safari.app"
+          "/System/Applications/Mail.app"
+          "/System/Applications/Passwords.app"
+          "/Applications/Docker.app"
+        ];
         persistent-others = [ "~/Downloads" ];
         show-process-indicators = true;
         show-recents = true;
-        static-only = true;
+        static-only = false;
+        tilesize = 64;
         wvous-bl-corner = 1;
         wvous-br-corner = 1;
         wvous-tl-corner = 1;
@@ -168,7 +163,7 @@
       finder = {
         AppleShowAllExtensions = true;
         AppleShowAllFiles = true;
-        CreateDesktop = true;
+        CreateDesktop = false;
         FXDefaultSearchScope = "SCcf";
         FXEnableExtensionChangeWarning = false;
         FXPreferredViewStyle = "Nlsv";
