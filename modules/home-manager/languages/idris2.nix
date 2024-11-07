@@ -41,6 +41,10 @@ in
 
     programs.emacs.setq = mkIf cfg.lsp.enable { lsp-idris2-lsp-path = "${idris2-lsp}/bin/idris2-lsp"; };
 
+    programs.emacs.doomConfig.init.lang.idris = {
+      enable = cfg.enable;
+    };
+
   };
 
 }

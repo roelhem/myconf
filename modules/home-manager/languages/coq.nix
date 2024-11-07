@@ -26,5 +26,9 @@ in
 
   config = {
     home.packages = optional cfg.enable coq;
+
+    programs.emacs.doomConfig.init.lang.coq = {
+      enable = cfg.enable;
+    };
   };
 }

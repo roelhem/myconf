@@ -21,25 +21,25 @@
   };
 
   environment = {
-    systemPackages = with pkgs; [ utm ];
+    systemPackages = with pkgs; [
+      utm
+      dosbox-x
+      enchant
+      (aspellWithDicts (
+        dicts: with dicts; [
+          en
+          en-computers
+          en-science
+          nl
+          fr
+        ]
+      ))
+    ];
   };
 
   services = {
     nix-daemon.enable = true;
-    yabai = {
-      enable = true;
-      config = {
-        layout = "bsp";
-      };
-      extraConfig = ''
-        yabai -m rule --add app="^System Settings$" manage=off
-        yabai -m rule --add app="^System Information$" manage=off
-        yabai -m rule --add app="^System Preferences$" manage=off
-        yabai -m rule --add app="Preferences$" manage=off
-        yabai -m rule --add app="Settings$" manage=off
-        yabai -m rule --add app="Systeeminstellingen" manage=off
-      '';
-    };
+    yabai.enable = false;
   };
 
   programs = {
@@ -65,7 +65,10 @@
     global = { };
     casks = [
       "docker"
+      "microsoft-teams"
       "microsoft-azure-storage-explorer"
+      "plex-media-server"
+      "pgadmin4"
     ];
     caskArgs = { };
     masApps = { };
@@ -99,43 +102,9 @@
     stateVersion = 4;
 
     defaults = {
-      NSGlobalDomain = {
-        # Mouse
-        AppleEnableMouseSwipeNavigateWithScrolls = false;
-        AppleEnableSwipeNavigateWithScrolls = false;
-
-        # Keyboard
-        NSAutomaticCapitalizationEnabled = false;
-        NSAutomaticDashSubstitutionEnabled = false;
-        NSAutomaticInlinePredictionEnabled = false;
-        NSAutomaticPeriodSubstitutionEnabled = false;
-        NSAutomaticQuoteSubstitutionEnabled = false;
-        NSAutomaticSpellingCorrectionEnabled = false;
-        KeyRepeat = 2;
-        InitialKeyRepeat = 15;
-
-        # Scrolling
-        AppleShowScrollBars = "Automatic";
-        AppleScrollerPagingBehavior = true;
-
-        # Finder
-        AppleShowAllExtensions = true;
-        AppleShowAllFiles = true;
-
-        # Units
-        AppleMeasurementUnits = "Centimeters";
-        AppleMetricUnits = 1;
-        AppleTemperatureUnit = "Celsius";
-      };
-
       # CustomUserPreferences = {
       #   "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" = true;
       # };
-
-      alf = {
-        allowdownloadsignedenabled = 1;
-        allowsignedenabled = 1;
-      };
 
       dock = {
         autohide = true;
@@ -149,52 +118,9 @@
           "/System/Applications/Passwords.app"
           "/Applications/Docker.app"
         ];
-        persistent-others = [ "~/Downloads" ];
-        show-process-indicators = true;
-        show-recents = true;
+        persistent-others = [ "/Users/roel/Downloads" ];
         static-only = false;
-        tilesize = 64;
-        wvous-bl-corner = 1;
-        wvous-br-corner = 1;
-        wvous-tl-corner = 1;
-        wvous-tr-corner = 1;
       };
-
-      finder = {
-        AppleShowAllExtensions = true;
-        AppleShowAllFiles = true;
-        CreateDesktop = false;
-        FXDefaultSearchScope = "SCcf";
-        FXEnableExtensionChangeWarning = false;
-        FXPreferredViewStyle = "Nlsv";
-        ShowStatusBar = true;
-        _FXShowPosixPathInTitle = true;
-      };
-
-      magicmouse.MouseButtonMode = "TwoButton";
-
-      menuExtraClock = {
-        Show24Hour = true;
-        ShowAMPM = false;
-        ShowDate = 0;
-        ShowDayOfMonth = true;
-        ShowDayOfWeek = true;
-        ShowSeconds = false;
-      };
-
-      spaces.spans-displays = false;
-
-      trackpad = {
-        Clicking = false;
-        Dragging = false;
-        TrackpadRightClick = true;
-      };
-
-    };
-
-    keyboard = {
-      enableKeyMapping = true;
-      remapCapsLockToControl = true;
     };
   };
 

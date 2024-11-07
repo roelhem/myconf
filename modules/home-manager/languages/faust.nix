@@ -29,6 +29,10 @@ in
 
     home.packages = optional cfg.enable faust;
 
+    programs.emacs.doomConfig.init.lang.faust = {
+      enable = cfg.enable;
+    };
+
   };
 
 }

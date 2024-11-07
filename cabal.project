@@ -1,5 +1,4 @@
-packages:
-    emacs/haskell-modules/my-emacs-native.cabal
+packages: pkgs/*/*.cabal
 
 tests:
     False

@@ -35,6 +35,10 @@ in
   };
 
   config = {
+    _module.args = {
+      inherit npkgs;
+    };
+
     home.packages = optional cfg.enable nodejs ++ optional cfg.corepack.enable corepack;
 
     programs.emacs.setq = mkIf cfg.enable { lsp-clients-npm-location = "${nodejs}/bin/npm"; };

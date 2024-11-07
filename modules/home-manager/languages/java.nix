@@ -32,6 +32,20 @@ in
   options.languages.java = {
     enable = mkEnableOption "{command} `java` language support.";
 
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     package = mkOption {
       type = types.package;
       default = pkgs.jdk;
@@ -50,6 +64,12 @@ in
     programs.java = mkIf cfg.enable {
       enable = true;
       package = jdk;
+    };
+
+    programs.emacs.doomConfig.init.lang.java = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+      tree-sitter = cfg.tree-sitter.enable;
     };
   };
 }

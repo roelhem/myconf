@@ -56,5 +56,9 @@ in
     home.packages = optional cfg.enable dhall ++ enabledDhallPackages;
 
     programs.emacs.setq = mkIf cfg.enable { dhall-command = "${dhall}/bin/dhall"; };
+
+    programs.emacs.doomConfig.init.lang.dhall = {
+      enable = cfg.enable;
+    };
   };
 }

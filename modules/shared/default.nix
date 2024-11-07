@@ -2,16 +2,31 @@
   pkgs,
   nixpkgsOverlays,
   defaultUser,
+  inputs,
+  myconf-literate-config,
   ...
 }:
 {
 
   imports = [ ./essentials.nix ];
 
-  home-manager.sharedModules = [ ../home-manager ];
+  home-manager = {
+    sharedModules = [
+      {
+        _module.args = {
+          inherit
+            defaultUser
+            inputs
+            myconf-literate-config
+            ;
+        };
+      }
+      ../home-manager
+    ];
+  };
 
   nix.settings = {
-    experimental-features = "nix-command flakes repl-flake";
+    experimental-features = "nix-command flakes";
     bash-prompt-prefix = "(nix:$name)\\040";
     accept-flake-config = true;
     extra-nix-path = "nixpkgs=flake:nixpkgs";
@@ -48,6 +63,7 @@
     jetbrains-mono
     monoid
     source-code-pro
+    emacs-all-the-icons-fonts
     (nerdfonts.override {
       fonts = [
         "FiraCode"
@@ -57,6 +73,7 @@
         "Monoid"
         "OpenDyslexic"
         "SourceCodePro"
+        "NerdFontsSymbolsOnly"
       ];
     })
   ];

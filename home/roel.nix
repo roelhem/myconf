@@ -15,29 +15,21 @@
         graphviz
         gnuplot
         imagemagick
-        pgadmin4-desktopmode
+        # pgadmin4-desktopmode
         # postman
-        prusa-slicer
+        # prusa-slicer
         # warp-terminal
         powershell
         iterm2
-        teams
         # discord
         # frescobaldi
         jetbrains.phpstorm
         vscode
         vscodium
         nix-tree
+        jwt-cli
       ]
     );
-
-    file = {
-
-    };
-
-    sessionPath = [
-
-    ];
   };
 
   programs = {
@@ -55,7 +47,6 @@
     ripgrep.enable = true;
     zsh.enable = true;
     emacs.enable = true;
-    doomemacs.enable = true;
     htop.enable = true;
     editorconfig.enable = true;
     openscad.enable = true;
@@ -66,6 +57,14 @@
   programs.git = {
     userName = "roelhem";
     userEmail = "ik@roelweb.com";
+    extraConfig = {
+      push = {
+        autoSetupRemote = true;
+      };
+      github = {
+        user = "roelhem";
+      };
+    };
   };
 
   programs.broot = {
@@ -84,6 +83,135 @@
     enableZshIntegration = true;
   };
 
+  programs.emacs.doomConfig = {
+    init = {
+      enable = true;
+      extraConfig = ''
+        (load! "extra-init.el")
+      '';
+      completion = {
+        company = {
+          enable = false;
+          childframe = true;
+        };
+        corfu = {
+          enable = true;
+          icons = true;
+          orderless = true;
+        };
+        vertico = {
+          enable = true;
+          icons = true;
+        };
+      };
+      ui = {
+        deft.enable = true;
+        doom.enable = true;
+        doom-dashboard.enable = true;
+        emoji.enable = true;
+        emoji.unicode = true;
+        hl-todo.enable = true;
+        ligatures.enable = true;
+        modeline.enable = true;
+        ophints.enable = true;
+        popup.enable = true;
+        popup.defaults = true;
+        treemacs.enable = true;
+        vc-gutter.enable = true;
+        vc-gutter.pretty = true;
+        vi-tilde-fringe.enable = true;
+        window-select.enable = true;
+        window-select.numbers = true;
+        window-select.switch-window = true;
+      };
+      editor = {
+        evil = {
+          enable = true;
+          everywhere = true;
+        };
+        file-templates.enable = true;
+        fold.enable = true;
+        format.enable = true;
+        format.onsave = true;
+        multiple-cursors.enable = true;
+        rotate-text.enable = true;
+        snippets.enable = true;
+      };
+      emacs = {
+        dired.enable = true;
+        electric.enable = true;
+        ibuffer.enable = true;
+        ibuffer.icons = true;
+        undo.enable = true;
+        vc.enable = true;
+      };
+      term = {
+        eshell.enable = true;
+        vterm.enable = true;
+      };
+      checkers = {
+        spell = {
+          enable = false;
+          enchant = true;
+        };
+        syntax.enable = true;
+      };
+      tools = {
+        debugger = {
+          enable = true;
+          auth = true;
+        };
+        direnv.enable = true;
+        docker.enable = true;
+        editorconfig.enable = true;
+        eval = {
+          enable = true;
+          overlay = true;
+        };
+        lookup.enable = true;
+        lsp = {
+          enable = true;
+          peek = true;
+        };
+        magit = {
+          enable = true;
+          forge = true;
+        };
+        make.enable = true;
+        prodigy.enable = true;
+        tree-sitter.enable = true;
+      };
+      os = {
+        macos.enable = pkgs.stdenv.isDarwin;
+        tty.enable = true;
+      };
+      lang = {
+        org = {
+          enable = true;
+          gnuplot = true;
+          passwords = true;
+          dragndrop = true;
+          roam2 = true;
+        };
+        web = {
+          enable = true;
+          tree-sitter = true;
+        };
+        emacs-lisp.enable = true;
+      };
+      app = {
+        everywhere.enable = false;
+      };
+      config = {
+        default = {
+          enable = true;
+          bindings = true;
+          smartparens = true;
+        };
+      };
+    };
+  };
+
   # programs.bun.enable
 
   # programs.chromium.enable
@@ -100,13 +228,22 @@
     python.enable = true;
     julia.enable = true;
     dotnet.enable = true;
-    nix.enable = true;
+    bicep.enable = true;
+    nix = {
+      enable = true;
+      nixfmt.enable = true;
+      lsp.enable = true;
+      tree-sitter.enable = true;
+    };
     agda.enable = true;
     coq.enable = true;
     haskell.enable = true;
     purescript.enable = true;
-    typescript.enable = true;
-    php.enable = true;
+    javascript.enable = true;
+    php = {
+      enable = true;
+      tree-sitter.enable = true;
+    };
     tex.enable = true;
     vue.enable = true;
     sh.enable = true;
@@ -122,6 +259,8 @@
     yaml.enable = true;
     toml.enable = true;
     json.enable = true;
+    sql.enable = true;
+    graphql.enable = true;
     dhall.enable = true;
     zig.enable = true;
     java.enable = true;

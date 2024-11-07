@@ -39,6 +39,8 @@ in
     home.packages =
       optional cfg.vuels.enable vue-language-server
       ++ optional cfg.volarls.enable volar-language-server;
+
+    programs.emacs.extraPackages = epkgs: optional cfg.enable epkgs.vue-ts-mode;
   };
 
 }

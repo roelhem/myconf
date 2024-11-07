@@ -37,6 +37,8 @@ in
   config = {
     home.packages = optional cfg.enable openscad ++ optional cfg.lsp.enable openscad-lsp;
 
+    programs.emacs.extraPackages = epkgs: optional cfg.enable epkgs.scad-mode;
+
     programs.emacs.setq = mkIf cfg.lsp.enable {
       lsp-openscad-server = "${pkgs.openscad-lsp}/bin/openscad-lsp";
     };

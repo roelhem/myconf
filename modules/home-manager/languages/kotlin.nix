@@ -48,5 +48,10 @@ in
       optional cfg.enable kotlin
       ++ optional cfg.lsp.enable kotlin-language-server
       ++ optional cfg.ktlint.enable ktlint;
+
+    programs.emacs.doomConfig.init.lang.kotlin = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+    };
   };
 }

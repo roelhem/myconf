@@ -43,14 +43,37 @@ in
       default = pkgs.mono;
     };
 
-    fsharp.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
+    csharp = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
+
+      tree-sitter = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+        };
+      };
     };
 
-    fsharp.package = mkOption {
-      type = types.package;
-      default = pkgs.fsharp;
+    fsharp = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
+
+      package = mkOption {
+        type = types.package;
+        default = pkgs.fsharp;
+      };
+
+      tree-sitter = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+        };
+      };
     };
 
     csharpier.enable = mkOption {
@@ -86,6 +109,19 @@ in
 
     programs.emacs.setq = mkIf cfg.lsp.enable {
       lsp-csharp-omnisharp-roslyn-binary-path = "${omnisharp}/bin/OmniSharp";
+    };
+
+    programs.emacs.extraPackages =
+      epkgs: optional cfg.fsharp.enable epkgs.ob-fsharp ++ optional cfg.fsharp.enable epkgs.eglot-fsharp;
+
+    programs.emacs.doomConfig.init.lang = {
+      csharp = {
+        enable = cfg.csharp.enable;
+        tree-sitter = cfg.csharp.tree-sitter.enable;
+      };
+      fsharp = {
+        enable = cfg.fsharp.enable;
+      };
     };
   };
 }

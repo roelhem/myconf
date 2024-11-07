@@ -29,24 +29,28 @@ in
       description = "The purescript package.";
     };
 
-    purs-tidy.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
+    purs-tidy = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
+
+      package = mkOption {
+        type = types.package;
+        default = npkgs.purs-tidy;
+      };
     };
 
-    purs-tidy.package = mkOption {
-      type = types.package;
-      default = npkgs.purs-tidy;
-    };
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
 
-    lsp.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
-    };
-
-    lsp.package = mkOption {
-      type = types.package;
-      default = npkgs.purescript-language-server;
+      package = mkOption {
+        type = types.package;
+        default = npkgs.purescript-language-server;
+      };
     };
   };
 
@@ -58,6 +62,11 @@ in
 
     programs.emacs.setq = {
       lsp-purescript-server-executable = "${purescript-language-server}/bin/purescript-language-server";
+    };
+
+    programs.emacs.doomConfig.init.lang.purescript = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
     };
   };
 

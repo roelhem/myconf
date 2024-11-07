@@ -54,9 +54,25 @@
       flake = false;
     };
 
+    # Emacs packages
+    unison-ts-mode = {
+      url = "github:fmguerreiro/unison-ts-mode";
+      flake = false;
+    };
+
     # Flake backwards compatibility
     flake-compat = {
       url = "github:edolstra/flake-compat";
+      flake = false;
+    };
+
+    # Tree-sitter grammars
+    tree-sitter-bicep = {
+      url = "github:tree-sitter-grammars/tree-sitter-bicep";
+      flake = false;
+    };
+    tree-sitter-unison = {
+      url = "github:kylegoetz/tree-sitter-unison";
       flake = false;
     };
   };
@@ -74,7 +90,7 @@
       ...
     }:
     let
-      lib = nixpkgs.lib;
+      lib = nixpkgs.lib.extend (final: _: import ./lib final);
 
       # Supported systems.
       linuxSystems = [
@@ -88,10 +104,8 @@
 
       overlays = [
         emacs-overlay.overlays.default
-        self.overlays.me
-        self.overlays.emacs
-        self.overlays.myconf
-      ];
+        (final: prev: { lib = prev.lib // import ./lib final.lib; })
+      ] ++ builtins.attrValues self.overlays;
 
       # System-dependent bootstrap.
       forSystem =
@@ -125,6 +139,9 @@
 
     in
     {
+      # Helper lib
+      lib = import ./lib lib;
+
       # Formatter
       formatter = forAllSystems ({ pkgs, ... }: pkgs.nixfmt-rfc-style);
 
@@ -137,9 +154,12 @@
           ...
         }:
         {
-          inherit (pkgs) doomemacs emacs-plus;
+          inherit (pkgs) doomemacs emacs-plus bicep-langserver;
           me = pkgs.dhallPackages.me;
           switch = pkgs.myconf-switch;
+          myconf-literate-config = pkgs.orgTangleFile ./config.org { };
+          doom-config =
+            self.darwinConfigurations.home-studio.config.home-manager.users.roel.programs.emacs.doomConfig.finalDirPackage;
         }
       );
 
@@ -174,8 +194,10 @@
       # Overlays
       overlays = {
         emacs = import ./overlays/emacs.nix inputs;
-        myconf = import ./overlays/myconf.nix inputs;
+        custom-pkgs = import ./overlays/custom-pkgs.nix inputs;
         me = import ./overlays/me.nix inputs;
+        tree-sitter = import ./overlays/tree-sitter.nix inputs;
+        python = import ./overlays/python.nix inputs;
       };
 
       # NixOS
@@ -192,15 +214,25 @@
             nix-darwin.lib.darwinSystem {
               inherit system;
               specialArgs = {
-                inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
-                me = self.packages."${system}".me;
-                defaultUser = {
-                  name = "roel";
-                };
-                nixformatter = self.formatter."${system}";
-                nixpkgsOverlays = overlays;
+                inherit lib;
               };
               modules = [
+                (
+                  { pkgs, ... }:
+                  {
+                    _module.args = {
+                      inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
+                      inherit inputs;
+                      myconf-literate-config = self.packages."${system}".myconf-literate-config;
+                      nixpkgsOverlays = overlays;
+                      nixformatter = self.formatter."${system}";
+                      me = self.packages."${system}".me;
+                      defaultUser = {
+                        name = "roel";
+                      };
+                    };
+                  }
+                )
                 home-manager.darwinModules.home-manager
                 nix-homebrew.darwinModules.nix-homebrew
                 ./modules/shared

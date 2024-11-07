@@ -3,7 +3,6 @@
 {
   imports = [
     ./programs/emacs/config.nix
-    ./programs/emacs/doom.nix
     ./programs/nodejs.nix
     ./programs/git.nix
     ./programs/fd.nix
@@ -16,11 +15,12 @@
     ./languages/coq.nix
     ./languages/nix.nix
     ./languages/dotnet.nix
+    ./languages/bicep.nix
     ./languages/haskell.nix
     ./languages/dhall.nix
     ./languages/python.nix
     ./languages/julia.nix
-    ./languages/typescript.nix
+    ./languages/javascript.nix
     ./languages/purescript.nix
     ./languages/vue.nix
     ./languages/nginx.nix
@@ -32,9 +32,12 @@
     ./languages/toml.nix
     ./languages/yaml.nix
     ./languages/json.nix
+    ./languages/graphql.nix
+    ./languages/sql.nix
     ./languages/xml.nix
     ./languages/vim.nix
     ./languages/markdown.nix
+    ./languages/org.nix
     ./languages/gleam.nix
     ./languages/idris2.nix
     ./languages/tex.nix

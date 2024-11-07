@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -32,7 +37,7 @@ in
 
   config = {
 
-    home.packages = optional cfg.lsp.enable docker-langserver;
+    home.packages = optional cfg.lsp.enable docker-langserver ++ optional cfg.enable pkgs.dockfmt;
 
     programs.emacs.setq = mkIf cfg.lsp.enable {
       lsp-dockerfile-language-server-command = [

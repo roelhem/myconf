@@ -22,6 +22,13 @@ in
 
     enable = mkEnableOption "{command} `agda` language support";
 
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+      };
+    };
+
     package = mkOption {
       type = types.package;
       default = pkgs.agda;
@@ -42,5 +49,10 @@ in
 
   config = {
     home.packages = optional cfg.enable agda; # ++ optional cfg.agda2hs.enable agda2hs;
+
+    programs.emacs.doomConfig.init.lang.agda = {
+      enable = cfg.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
   };
 }

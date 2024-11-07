@@ -15,6 +15,13 @@ in
   options.languages.json = {
     enable = mkEnableOption "{command} `json` language support";
 
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     lsp.enable = mkOption {
       type = types.bool;
       default = cfg.enable;
@@ -28,6 +35,12 @@ in
 
   config = {
     home.packages = optional cfg.lsp.enable vscode-json-languageserver;
+
+    programs.emacs.doomConfig.init.lang.json = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
   };
 
 }

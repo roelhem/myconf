@@ -36,6 +36,20 @@ in
     nixfmt = mkNixOptions pkgs.nixfmt-rfc-style;
     nil = mkNixOptions pkgs.nil;
     nixd = mkNixOptions pkgs.nixd;
+
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
   };
 
   config = {
@@ -45,6 +59,12 @@ in
     programs.emacs.setq =
       mkIf cfg.nixfmt.enable { nix-nixfmt-bin = "${nixfmt}/bin/nixfmt"; }
       // mkIf cfg.nixd.enable { lsp-nix-nixd-server-path = "${nixd}/bin/nixd"; };
+
+    programs.emacs.doomConfig.init.lang.nix = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
   };
 
 }

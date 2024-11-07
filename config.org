@@ -3,85 +3,1330 @@
 #+email: myconf@roelweb.com
 #+latex_class: book
 #+latex_header_extra: \usepackage[autooneside=false,automark,headsepline]{scrlayer-scrpage}
-#+property: header-args:emacs-lisp
-#+property: header-args:elisp :results replace :export code
-#+property: header-args:shell :tangle "setup.sh"
-#+property: header-args :tangle no :mkdirp yes :comments both :results silent :eval no-export
-
+#+property: header-args :tangle no :mkdirp yes :comments no :results silent :eval no-export
+#+property: header-args:elisp :export code :lexical t
 #+startup: fold
+#+startup: showstars
 
-* Doom Emacs
+* About :nonum:
 
+This is my literate config. Here, I put configuration in a more structured way so that
+I can easier edit and search through it in Emacs.
+
+The idea of this file is that both the source and the documentation are as close
+together as possible.
+
+The literate config should only contain configuration for systems where I also install
+/Emacs/! This is because some distribution of emacs is required to build (tangle) this
+file.
+
+** Building this file
+
+*** Using ~nix build~ command
+
+The nix derivation to build this file is defined in the root [[./flake.nix]] file
+and set as the ~myconf-literate-config~-package in the outputs. This means that
+you can quickly build this file by running on any supported system (darwin/linux)
+that has the [[https://nixos.org/download/][Nix Package Manager]] installed.
+
+#+begin_src shell :tangle "build.sh" :shebang "#!/bin/bash sh"
+nix --experimental-features 'nix-command flakes' build ~/.myconf#myconf-literate-config
+#+end_src
+
+Note that the command above does assume that this repository is cloned at the
+standard location (~~/.myconf~). This is the only way in which I will use/test this
+command, but it should work fine after adjust the command slightly.
+
+* Setup
+
+Here I define all the setup steps that are nessicary to build this file.
+
+** Build outputs
+
+*** Nix results
+
+This expression is evaluated by nix and returned as the results attribute of
+the derivation that tangled this file.
+
+#+begin_src nix :tangle "results.nix"
+{ doomemacs-config = import ./doomemacs-config.nix; }
+#+end_src
+
+** Parameters
+
+*** Host-specific configuration
+
+* Nix
+
+** Users
+
+[[./home/roel.nix]]
+
+* Emacs
+
+Please myself, try to use the following convention for naming things in this config:
+
+ - *Any utility symbol* must start with ~~~.
+ - *Any other symbol* must start with ~rh/~.
+ - *Hooks* must end with ~-h~;
+
+Furthermore, I should only use this file to configure things. If there is a large group
+of functions, i should move it to a dedicated Elisp package as defined in the nix store
+at [[./pkgs/emacs/elisp-packages/]]. This should also make it easier to limit the amount of
+accidental dependencies as they are build using nix.
+
+** Shared
+
+These configuration items should be usable for both /Vanilla Emacs/ and /Doom Emacs/.
+I should try to put as much configuration here to prepare for the switch from
+/Doom Emacs/ to something else that is more compatible to nix.
+
+*** Tuning
+:PROPERTIES:
+:header-args:elisp+: :tangle no :results value code replace
+:END:
+
+This section for configuration to ensure that emacs runs as smooth as possible.
+
+#+NAME: tuning-host-specific
+|                 | gcmh-high-cons-threshold | read-process-output-max | lsp-file-watch-threshold |
+|-----------------+--------------------------+-------------------------+--------------------------|
+| home-imac-x86   | 64MiB                    | 1MiB                    | 2000                     |
+| home-studio     | 1GiB                     | 1MiB                    | 3000                     |
+
+#+begin_src elisp :var items=tuning-host-specific name=(builder-attrs)
+(alist-get "home-studio" items)
+#+end_src
+
+*** Configuration :file:
+:PROPERTIES:
+:header-args:elisp+: :tangle no :noweb-ref "shared-config"
+:END:
+
+**** Utilities
+
+***** Common Predicates
+
+#+begin_src elisp
+(defun rh/major-mode-p (modesymb)
+  "Checks if MODESYMB is the current major mode."
+  (eq major-mode modesymb))
+#+end_src
+
+***** ~rx~ (regular expressions)
+
+#+begin_src elisp
+(rx-define nix-base32-char (any "0-9" "a-d" "f-n" "p-s" "v-z"))
+(rx-define nix-hash (= 32 nix-base32-char))
+(rx-define snake-case (seq (in (?a . ?z))
+                           (* (in (?a . ?z) (?0 . ?9) ?_))))
+(rx-define kebab-case (seq (in (?a . ?z))
+                           (* (in (?a . ?z) (?0 . ?9) ?-))))
+(rx-define camel-case (seq (in (?a . ?z))
+                           (* (in (?A . ?Z) (?a . ?z) (?0 . ?9)))))
+(rx-define pascal-case (seq (in (?A . ?Z))
+                            (* (in (?A . ?Z) (?a . ?z) (?0 . ?9)))))
+(rx-define constant-case (seq (in (?A . ?Z))
+                              (* (in (?A . ?Z) (?0 . ?9) ?_))))
+#+end_src
+
+***** UUIDs
+
+Just some functions to generate new random UUIDs. Inspired by [[http://xahlee.info/emacs/emacs/elisp_generate_uuid.html][~xah-insert-random-uuid~]].
+
+#+begin_src elisp
+(defvar rh/uuidgen-bin-path "uuidgen"
+  "Path to the uuidgen binary.")
+
+(defun rh/random-uuid ()
+  "Returns a random uuid in uppercase.
+
+This is using the 'uuidgen' cli tool under the hood."
+  (substring (shell-command-to-string rh/uuidgen-bin-path) 0 -1))
+
+(defun rh/random-uuid-lowercase ()
+  "Returns a random uuid in lowercase.
+
+This is using the 'uuidgen' cli tool under the hood."
+  (downcase (rh/random-uuid)))
+
+(defun rh/insert-random-uuid ()
+  "Insert an uppercase UUID."
+  (interactive)
+  (insert (rh/random-uuid)))
+
+(defun rh/insert-random-uuid-lowercase ()
+  "Insert a lowercase UUID."
+  (interactive)
+  (insert (rh/random-uuid-lowercase)))
+#+end_src
+
+***** Timestamps
+
+#+begin_src elisp
+(defun rh/insert-current-timestamp-s ()
+  "Inserts the current unix timestamp at point."
+  (interactive)
+  (insert (format-time-string "%s" (current-time))))
+#+end_src
+
+***** Tree Sitter
+
+#+begin_src elisp
+(defun rh/treesit-append-font-lock-feature-at (level &rest features)
+  "Adds treesit font lock FEATURES at the provided LEVEL."
+  (setq treesit-font-lock-feature-list
+        (cl-loop for i below level
+                 collect (let ((old (nth i treesit-font-lock-feature-list)))
+                           (if (= (1+ i) level)
+                               (append features old)
+                             old)))))
+
+(defun rh/treesit-append-font-lock-settings (&rest args)
+  "Adds treesit font lock settings."
+  (when-let ((settings (apply #'treesit-font-lock-rules args)))
+    (setq treesit-font-lock-settings
+          (append treesit-font-lock-settings settings))))
+
+(defun rh/treesit-font-lock-refresh ()
+  "Recompute treesit font lock features and refontify."
+  (interactive)
+  (treesit-font-lock-recompute-features)
+  (treesit-font-lock-fontify-region (point-min)
+                                    (point-max)))
+
+(defun rh/treesit-set-local-font-lock-level (val &optional buf)
+  "Sets the treesit font lock level to VAL in BUF.
+
+This sets the buffer-local value of `treesit-font-lock-level' and
+recomputes the font lock features.
+
+Uses the current buffer if BUF is nil or omitted."
+  (interactive "Ntreesit-font-lock-level: ")
+  (with-current-buffer (or buf (current-buffer))
+    (setq-local treesit-font-lock-level val)
+    (rh/treesit-font-lock-refresh)))
+
+(defun rh/treesit-set-font-lock-level (val)
+  "Sets `treesit-font-lock-level' to VAL in all buffers."
+  (interactive "Ntreesit-font-lock-level: ")
+  (set-default 'treesit-font-lock-level val)
+  (when (treesit-available-p)
+    (named-let loop ((res nil)
+                     (buffers (buffer-list)))
+      (if (null buffers)
+          (mapc (lambda (b)
+                  (rh/treesit-set-local-font-lock-level val b))
+                res)
+        (let ((buffer (car buffers)))
+          (with-current-buffer buffer
+            (if treesit-font-lock-settings
+                (loop (append res (list buffer)) (cdr buffers))
+              (loop res (cdr buffers)))))))))
+
+(defun rh/treesit-language-at-point ()
+  "Print the treesit language at the current point."
+  (interactive)
+  (message (symbol-name (treesit-language-at (point)))))
+
+(defun rh/treesit-validate-font-lock-rules (query-specs)
+  "Run `treesit-query-validate' on font lock rules"
+  (let (current-language
+        current-override
+        current-feature
+        (result nil))
+    (while query-specs
+      (let ((token (pop query-specs)))
+        (pcase token
+          (:language
+           (let ((lang (pop query-specs)))
+             (when (or (not (symbolp lang))
+                       (null lang))
+               (signal 'treesit-font-lock-error
+                       `("Value of :language should be a symbol"
+                         ,lang)))
+             (setq current-language lang)))
+          (:override
+           (let ((flag (pop query-specs)))
+             (when (not (memq flag '(t nil append prepend keep)))
+               (signal 'treesit-font-lock-error
+                       `("Value of :override should be one of t, nil, append, prepend, keep"
+                         ,flag)))
+             (setq current-override flag)))
+          (:feature
+           (let ((var (pop query-specs)))
+             (when (or (not (symbolp var))
+                       (memq var '(t nil)))
+               (signal 'treesit-font-lock-error
+                       `("Value of :feature should be symbol"
+                         ,var)))
+             (setq current-feature var)))
+          ((pred treesit-query-p)
+           (when (null current-language)
+             (signal 'treesit-font-lock-error
+                     `("Language unspecified, use :language keyword to specify a language for this query"
+                       ,token
+                       ,current-feature)))
+           (push (list current-feature
+                       current-language
+                       (treesit-query-validate current-language token))
+                 result))
+          (_ (signal 'treesit-font-lock-error
+                     `("Unexpected value" ,token ,current-feature))))))
+    (nreverse result)))
+
+(defun rh/treesit-font-lock-settings-validate (settings)
+  (cl-loop for (query x feature override) in settings
+           do (progn
+                (message "%s" feature)
+                (treesit-query-validate (treesit-query-language query) query))))
+#+end_src
+
+***** Frames
+
+Some helper functions to work with frames.
+
+#+begin_src elisp :lexical t
+(defun rh/display-monitor-attributes-list (&optional display)
+  "Shows the monitors of DISPLAY ordered from left to right."
+  (seq-sort-by (lambda (x)
+               (car (alist-get 'geometry x)))
+             '<
+             (display-monitor-attributes-list display)))
+
+(defun rh/display-monitor-ppi (monitor-attrs)
+  ""
+  (pcase-let ((`(,x ,y ,width ,height) (alist-get 'geometry monitor-attrs))
+              (`(,mm-width ,mm-height) (alist-get 'mm-size monitor-attrs)))
+    (/
+     (+ (/ (float width) (float mm-width) 0.039370078740157)
+        (/ (float height) (float mm-height) 0.039370078740157))
+     2)))
+
+(defun rh/make-frame-on-nth-monitor (n &optional display parameters)
+  "Makes a new frame on monitor N on DISPLAY with PARAMETERS."
+  (when-let* ((monitor-workarea
+               (alist-get 'workarea (nth n (rh/display-monitor-attributes-list display))))
+              (geometry-parameters
+               `((top . ,(nth 1 monitor-workarea))
+                 (left . ,(nth 0 monitor-workarea)))))
+    (make-frame (append geometry-parameters parameters))))
+
+(defun rh/frame-left-monitor-attributes (&optional frame)
+  "The attributes of the monitor on the left from FRAME."
+  (pcase-let ((`(,left ,top) (frame-monitor-attribute 'workarea frame))
+              (res nil))
+    (dolist (element (rh/display-monitor-attributes-list) result)
+      (pcase-let ((`(,fleft ,ftop ,fwidth ,fheigth) (alist-get 'geometry element)))
+        (when (<= (+ fleft fwidth) left)
+          (setq res element))
+        (setq result res)))))
+
+(defun rh/frame-right-monitor-attributes (&optional frame)
+  "The attributes of the monitor on the right from FRAME."
+  (pcase-let ((`(,left ,top) (frame-monitor-attribute 'workarea frame))
+              (res nil))
+    (dolist (element (nreverse (rh/display-monitor-attributes-list)) result)
+      (pcase-let ((`(,fleft ,ftop ,fwidth ,fheigth) (alist-get 'geometry element)))
+        (when (> fleft left)
+          (setq res element))
+        (setq result res)))))
+
+(defun rh/make-frame-monitor-left (&optional parameters)
+  "Makes a new frame on the left monitor."
+  (interactive)
+  (when-let* ((monitor-workarea
+               (alist-get 'workarea (rh/frame-left-monitor-attributes)))
+              (geometry-parameters
+               `((top + ,(min 0 (nth 1 monitor-workarea)))
+                 (left + ,(nth 0 monitor-workarea)))))
+    (make-frame (append geometry-parameters parameters))))
+
+(defun rh/make-frame-monitor-right (&optional parameters)
+  "Makes a new frame on the left monitor."
+  (interactive)
+  (when-let* ((monitor-workarea
+               (alist-get 'workarea (rh/frame-right-monitor-attributes)))
+              (geometry-parameters
+               `((top . ,(nth 1 monitor-workarea))
+                 (left . ,(nth 0 monitor-workarea)))))
+    (make-frame (append geometry-parameters parameters))))
+
+(defun rh/frame-left-monitor-frames (&optional frame)
+  "The attributes of the monitor on the left from FRAME."
+  (pcase-let ((`(,left ,top) (frame-monitor-attribute 'workarea frame))
+              (result nil))
+    (dolist (element (rh/display-monitor-attributes-list))
+      (pcase-let ((`(,fleft ,ftop ,fwidth ,fheigth) (alist-get 'geometry element)))
+        (when (<= (+ fleft fwidth) left)
+          (setq result (append result (alist-get 'frames element))))))
+    result))
+
+(defun rh/frame-right-monitor-frames (&optional frame)
+  "The attributes of the monitor on the right from FRAME."
+  (pcase-let ((`(,left ,top) (frame-monitor-attribute 'workarea frame))
+              (result nil))
+    (dolist (element (reverse (rh/display-monitor-attributes-list)))
+      (pcase-let ((`(,fleft ,ftop ,fwidth ,fheigth) (alist-get 'geometry element)))
+        (when (> fleft left)
+          (setq result (append result (alist-get 'frames element))))))
+    result))
+#+end_src
+
+#+begin_src elisp
+(defun rh/select-frame-monitor-left (&optional frame)
+  "Select and focus on frame on the monitor left to FRAME."
+  (interactive)
+  (let ((res nil))
+    (dolist (left-frame (rh/frame-left-monitor-frames frame))
+      (when (frame-visible-p left-frame)
+        (setq res left-frame)))
+    (when res
+      (select-frame-set-input-focus res)
+      res)))
+
+(defun rh/select-frame-monitor-right (&optional frame)
+  "Select and focus on frame on the monitor left to FRAME."
+  (interactive)
+  (let ((res nil))
+    (dolist (left-frame (rh/frame-right-monitor-frames frame))
+      (when (frame-visible-p left-frame)
+        (setq res left-frame)))
+    (when res
+      (select-frame-set-input-focus res)
+      res)))
+#+end_src
+
+***** Windows
+
+****** Movement
+
+#+begin_src elisp
+(defun rh/windmove-left (&optional arg)
+  "Move to left window"
+  (interactive "P")
+  (condition-case nil
+      (windmove-left)
+    (user-error
+     (unless (rh/select-frame-monitor-left)
+       (let ((newframe (rh/make-frame-monitor-left)))
+         (toggle-frame-fullscreen newframe)
+         (select-frame-set-input-focus newframe))))))
+
+(defun rh/windmove-right (&optional arg)
+  (interactive "P")
+  (condition-case nil
+      (windmove-right)
+    (user-error
+     (unless (rh/select-frame-monitor-right)
+       (let ((newframe (rh/make-frame-monitor-right)))
+         (toggle-frame-fullscreen newframe)
+         (select-frame-set-input-focus newframe))))))
+#+end_src
+
+***** Buffers
+
+#+begin_src elisp
+(defun rh/buffer-major-mode (buf)
+  (with-current-buffer buf
+    major-mode))
+
+(defun rh/reload-major-mode-buffers (&rest modes)
+  "Reload all buffers with the provided major MODES"
+  (dolist (mode modes)
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (when (eq major-mode mode)
+          (funcall mode))))))
+#+end_src
+
+***** Modes
+
+#+begin_src elisp
+(defmacro rh/with-major-mode (mode &rest forms)
+  "Run FORMS with a temporary buffer in mode mode"
+  (declare (indent defun))
+  `(with-temp-buffer
+     (funcall ,mode)
+     ,@forms))
+#+end_src
+
+**** Tuning
+
+Section for configuration to ensure that emacs runs as smooth as possible.
+
+***** Garbage Collection
+
+#+begin_src elisp
+(with-eval-after-load 'gcmh
+  (setq gcmh-high-cons-threshold (* 1024 1024 1024)))
+#+end_src
+
+***** LSP
+
+#+begin_src elisp
+(setq read-process-output-max (* 1024 1024)
+      lsp-file-watch-threshold 3000)
+#+end_src
+
+***** Display
+
+#+begin_src elisp
+(setq ns-use-native-fullscreen t)
+#+end_src
+
+**** Global Behavior
+
+***** Emacs Server
+
+#+begin_src elisp
+;; (setq server-socket-dir "/Users/roel/.local/var/run/emacs")
+#+end_src
+
+***** Closing Window/Frame
+
+#+begin_src elisp
+(defun rh/close-window-or-frame ()
+  "Close the selected window or frame if it is the last window."
+  (interactive)
+  (if (window-dedicated-p)
+      (evil-window-delete)))
+#+end_src
+
+***** Local variables
+
+#+begin_src elisp
+(setq enable-local-variables :all)
+#+end_src
+
+**** Appearance
+
+This section configures how emacs looks.
+
+***** Glyphs
+
+Characters indicating things.
+
+#+begin_src elisp
+(setq truncate-string-ellipsis "…")
+#+end_src
+
+***** Date/Time
+
+Use normal European time formats.
+
+#+begin_src elisp
+(setq display-time-24hr-format t)
+#+end_src
+
+And globally enable ~display-time-mode~. I have no idea why my subconcious wants this...
+
+#+begin_src elisp
+(display-time-mode 1)
+#+end_src
+
+***** Faces
+
+****** Extra font lock faces
+
+Make things extra colorful!
+
+The ~tree-sitter~ library, which I've grown quite font of, has a lot more faces than
+the builtin ~treesit~ library (which uses the standard ~font-lock-*~ faces.) Here,
+I will add some substitutes for those faces.
+
+Firstly, a macro to make it easier to define those faces:
+
+#+begin_src elisp
+(defmacro rh/define-extra-font-lock-face (&rest args)
+  "Defines extra font lock faces as a substitutes for tree-sitters faces.
+
+Arguments should be lists of the following form:
+
+        (NAME TSNAME)
+
+Where NAME is the base name of the new face. The actual symbol-name for
+the face will be \"rh/font-lock-NAME-face\".
+
+TSNAME should be the suffix of the original \"tree-sitter-hl-face:*\" name.
+The documentation is generated based on this TSNAME."
+  `(progn
+     ,@(cl-loop
+        for (name tsname) in args
+        for symb = (intern (concat "rh-font-lock-" (symbol-name name) "-face"))
+        for doc = (concat "Font lock version of `" (symbol-name tsname) "'.")
+        collect `(defface ,symb
+                   '((t :inherit ,tsname))
+                   ,doc))))
+
+                                        ; (defface rh/font-lock-special-punctuation-face nil nil)
+#+end_src
+
+And now the extra faces that I want:
+
+#+begin_src elisp
+(rh/define-extra-font-lock-face
+ (special-string tree-sitter-hl-face:string.special)
+ (special-function tree-sitter-hl-face:function.special)
+ (special-variable tree-sitter-hl-face:variable.special)
+ (special-punctuation tree-sitter-hl-face:punctuation.special)
+ (builtin-type tree-sitter-hl-face:type.builtin)
+ (builtin-function tree-sitter-hl-face:function.builtin)
+ (builtin-constant tree-sitter-hl-face:constant.builtin)
+ (builtin-variable tree-sitter-hl-face:variable.builtin)
+ (macro tree-sitter-hl-face:function.macro)
+ (label tree-sitter-hl-face:label)
+ (pragma tree-sitter-hl-face:pragma)
+ (tag tree-sitter-hl-face:tag)
+ (character tree-sitter-hl-face:character)
+ (type-parameter tree-sitter-hl-face:type.parameter)
+ (type-argument tree-sitter-hl-face:type.argument)
+ (constructor tree-sitter-hl-face:constructor))
+
+(defface rh-font-lock-property-deref-face
+  '((t :slant italic :inherit font-lock-property-use-face))
+  "Face for property dereferenced from the object.")
+
+(defface rh-font-lock-method-name-face
+  '((t :inherit font-lock-function-name-face))
+  "Face for method definitions, like `font-lock-function-name-face'.")
+
+(defface rh-font-lock-method-call-face
+  '((t :slant italic :inherit font-lock-function-call-face))
+  "Face for method calls, like `font-lock-function-call-face'.")
+
+(defface rh-font-lock-template-string-face
+  '((t :inherit font-lock-string-face))
+  "Face for special strings that accept some kind of template syntax.")
+
+(defface rh-font-lock-implicit-constructor-face
+  '((t :inherit font-lock-builtin-face))
+  "Face for brackets that implicitly construct things.")
+
+(defface rh-font-lock-namespace-name-face
+  '((t :inherit font-lock-type-face))
+  "Face for namespace names.")
+
+(defface rh-font-lock-namespace-use-face
+  '((t :inherit rh-font-lock-namespace-name-face))
+  "Face for references to namespace names.")
+#+end_src
+
+**** Editor
+
+This section configures how emacs behaves as a text editor.
+
+#+begin_src elisp
+(setq ns-function-modifier 'hyper)
+#+end_src
+
+***** Line numbers
+
+This determines the style of line numbers in the editor.
+
+#+begin_src elisp
+(setq display-line-numbers-type 'relative)
+#+end_src
+
+The allowed values:
+
+| Value       | Description           |
+|-------------+-----------------------|
+| ~nil~       | No line numbers       |
+| ~t~         | Normal line numbers.  |
+| ~'relative~ | Relative line numbers |
+
+***** Behaviour
+
+#+begin_src elisp
+(setq undo-limit (* 64 1024 1024)
+      auto-save-default t)
+#+end_src
+
+***** Tree Sitter (~treesit~)
+
+Extra configuration for the builtin ~treesit~ package.
+
+****** Font lock level
+
+#+begin_src elisp
+(set-default 'treesit-font-lock-level 4)
+#+end_src
+
+****** Font Lock Rules
+
+******* Setup :nonum:
+
+#+begin_src elisp
+(defvar rh/treesit-font-lock-rules-alist nil
+  "My custom font lock settings.")
+#+end_src
+
+***** Evil
+
+I know, it is very evil, but I am used to it. (Also, it translates a bit better
+to other editors.)
+
+#+begin_src elisp
+(setq evil-kill-on-visual-paste nil
+      evil-respect-visual-line-mode t
+      evil-ex-substitute-global t)
+#+end_src
+
+***** Perspectives
+
+#+begin_src elisp
+(setq doom-modeline-persp-name t)
+
+(use-package persp-mode
+  :config (persp-mode 1)
+  :defer t)
+#+end_src
+
+**** Filesystem
+
+***** Special Files
+
+#+NAME: emacs-config-special-files
+| Name           | File Path           | Keybinding | sudo |
+|----------------+---------------------+------------+------|
+| literal-config | ~/.myconf/config.el | ,          | no   |
+| hosts          | /etc/hosts          | h          | yes  |
+
+#+begin_src elisp
+(defun rh/doom-config-find-file ()
+  (interactive)
+  (find-file doom-user-dir))
+
+(defun rh/doom-local-find-file ()
+  (interactive)
+  (find-file doom-local-dir))
+
+(defun rh/doom-emacs-find-file ()
+  (interactive)
+  (find-file doom-emacs-dir))
+#+end_src
+
+***** LSP mode
+
+LSP-mode has a strange file-watch behaviour that can slow things down. To limit
+the amount of files that are watched in a project, we will add some additional
+rules to ~lsp-file-watch-ignored-directories~ and ~lsp-file-watch-ignored-files~.
+
+The directories and files added are mainly the common build/vendor/output directories,
+which I do not edit commonly anyway.
+
+#+begin_src elisp
+(with-eval-after-load 'lsp-mode
+  (let ((ld 'lsp-file-watch-ignored-directories)
+        (lf 'lsp-file-watch-ignored-files))
+    (add-to-list ld "[/\\\\]\\.nx\\'")
+    (add-to-list ld "[/\\\\]vendor\\'")
+    (add-to-list ld "[/\\\\]dist\\'")
+    (add-to-list ld "[/\\\\]\\.postman\\'")
+    (add-to-list ld "[/\\\\]\\.spago\\'")
+    (add-to-list ld "[/\\\\]\\.phpunit.cache\\'")
+    (add-to-list ld "[/\\\\]doomemacs")))
+#+end_src
+
+**** Tools
+
+***** Which-key
+
+Configures the helpers for key-bindings.
+
+#+begin_src elisp
+(setq which-key-idle-delay 0.5
+      which-key-allow-multiple-replacements t
+      which-key-show-operator-state-map t
+      which-key-use-C-h-commands nil
+      which-key-show-remaining-keys t)
+#+end_src
+
+***** Inspect load path
+
+Quick tool to inspect the current load path
+
+#+begin_src elisp
+(defun rh/inspect-load-path ()
+  "Show the load path in a new buffer"
+  (interactive)
+  (let ((buf (get-buffer-create "*rh/inspect-load-path*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (dolist (el load-path)
+        (insert " - " el ?\n)))
+    (switch-to-buffer buf)))
+#+end_src
+
+**** Ecosystems
+
+This sections focuses on configuration that is specific to different ecosystems. They are
+grouped together so that it is easier for me to find the settings I want to change.
+
+***** Org :ATTACH:
+:PROPERTIES:
+:ID:       630775f0-cdf3-495d-98d7-750a69cd2c2d
+:END:
+
+Settings specific to Emacs org-mode.
+
+#+begin_src elisp
+(setq org-directory "~/org/")
+#+end_src
+
+****** Appearance
+
+#+begin_src elisp
+(setq org-ellipsis " […] ")
+#+end_src
+
+****** Links
+
+#+begin_src elisp
+;; (add-to-list 'org-link-abbrev-alist '("myconf" . "file:~/.myconf/%s"))
+;; (add-to-list 'org-link-abbrev-alist '("workspace" . "file:~/workspace/%s"))
+#+end_src
+
+****** Tags
+
+#+begin_src elisp
+(setq org-group-tags t)
+#+end_src
+
+****** Todos
+
+#+begin_src elisp
+(setq-default org-todo-keywords
+              '((sequence "TODO(t)" "HOLD(h)" "|" "DONE(t)")
+                (sequence "REPORT(r)" "BUG(b)" "KNOWNCAUSE(c)" "|" "FIXED(f)")
+                (sequence "[ ](T)" "[-](S)" "[?](W)" "|" "[X](D)")))
+#+end_src
+
+****** Logging
+
+#+begin_src elisp
+(setq org-log-into-drawer t)
+#+end_src
+
+****** Clock
+
+#+begin_src elisp
+(setq org-clock-idle-time 10)
+#+end_src
+
+***** Elisp
+
+****** Keybinds
+
+#+begin_src elisp
+(evil-define-key 'motion emacs-lisp-mode-map
+  (kbd "<enter>") 'eval-defun
+  (kbd "RET") 'eval-defun)
+#+end_src
+
+***** Nix
+
+****** Store Path Highlights
+
+#+begin_src elisp
+(defface rh/nix-store-path nil
+  "Face to highlight nix store paths.")
+
+(define-minor-mode rh/nix-store-path-hl-mode
+  "Highlight nix-store paths."
+  :init-value nil
+  (let* ((regexp (rx "/nix/store/" nix-hash))
+           (keywords `((,regexp . rh/nix-store-path))))
+    (if rh/nix-store-path-hl-mode
+        (font-lock-add-keywords nil keywords)
+      (font-lock-remove-keywords nil keywords))
+    (font-lock-flush)))
+#+end_src
+
+****** Minor mode ~nix-prettify-mode~ (hide nix hashes)
+
+Change the regular expression
+
+#+begin_src elisp
+(setq nix-prettify-regexp
+      (rx "/" (or "store" "nar" "log") "/"
+          (= 6 nix-base32-char)
+          (group (= 26 nix-base32-char))))
+#+end_src
+
+****** LSP
+
+#+begin_src elisp
+(setq lsp-nix-nil-auto-eval-inputs nil)
+#+end_src
+
+***** F#
+
+****** ob-fsharp :package:
+
+#+begin_src elisp
+(use-package ob-fsharp
+  :after org)
+#+end_src
+
+****** eglot-fsharp :package:
+
+#+begin_src elisp
+;; (use-package eglot-fsharp)
+#+end_src
+
+***** Haskell
+
+***** Unison
+
+***** JSON
+
+***** Typescript
+
+****** Treesit font lock rules
+
+#+begin_src elisp
+(defun rh/typescript-treesit-font-lock-rules (language)
+  "My treesit font lock rules for typescript."
+  (let ((func-exp (tsx-ts-mode--font-lock-compatibility-function-expression language)))
+    `(:language ,language
+      :feature comment
+      ([(comment) (hash_bang_line)] @font-lock-comment-face)
+
+      :language ,language
+      :feature constant
+      (((identifier) @font-lock-constant-face
+        (:match ,(rx string-start constant-case string-end)
+                @font-lock-constant-face))
+       [(true) (false) (null)] @font-lock-constant-face)
+
+      :language ,language
+      :feature keyword
+      ([,@typescript-ts-mode--keywords] @font-lock-keyword-face
+       [(this) (super)] @font-lock-keyword-face)
+
+      :language ,language
+      :feature string
+      ((regex pattern: (regex_pattern)) @font-lock-regexp-face
+       (string) @font-lock-string-face
+       (template_string ["`" (string_fragment)] @rh-font-lock-template-string-face)
+       (template_substitution ["${" "}"] @font-lock-misc-punctuation-face))
+
+      :language ,language
+      :override t
+      :feature declaration
+      ((,func-exp
+        name: (identifier) @font-lock-function-name-face)
+       (function_declaration
+        name: (identifier) @font-lock-function-name-face)
+       (function_signature
+        name: (identifier) @font-lock-function-name-face)
+
+       (method_definition
+        name: (property_identifier) @rh-font-lock-method-name-face)
+       (method_signature
+        name: (property_identifier) @rh-font-lock-method-name-face)
+
+       (required_parameter (identifier) @font-lock-variable-name-face)
+       (optional_parameter (identifier) @font-lock-variable-name-face)
+       (arrow_function
+        parameter: (identifier) @font-lock-variable-name-face)
+
+       (variable_declarator
+        name: (identifier) @font-lock-function-name-face
+        value: ,(vector `(,func-exp) '(arrow_function)))
+
+       (variable_declarator
+        name: (identifier) @font-lock-variable-name-face)
+
+       (enum_declaration (identifier) @font-lock-type-face)
+
+       (extends_clause value: (identifier) @font-lock-type-face)
+       (extends_clause value: (member_expression
+                               object: (identifier) @font-lock-type-face
+                               property: (property_identifier) @font-lock-type-face))
+
+       (variable_declarator
+        name: (array_pattern
+               (identifier)
+               (identifier) @font-lock-function-name-face)
+        value: (array (number) (,func-exp)))
+
+       (catch_clause
+        parameter: (identifier) @font-lock-variable-name-face)
+
+       (import_clause (identifier) @font-lock-variable-name-face)
+       (import_clause (named_imports (import_specifier
+                                      alias: (identifier) @font-lock-variable-name-face)))
+       (import_clause (named_imports (import_specifier
+                                      !alias
+                                      name: (identifier) @font-lock-variable-name-face)))
+       (import_clause (namespace_import (identifier) @rh-font-lock-namespace-name-face)))
+
+      :language ,language
+      :feature identifier
+      ((nested_type_identifier
+        module: (identifier) @font-lock-type-face)
+
+       (type_identifier) @font-lock-type-face
+       (predefined_type) @rh-font-lock-builtin-type-face
+
+       (new_expression
+        constructor: (identifier) @rh-font-lock-constructor-face)
+
+       (enum_body (property_identifier) @font-lock-constructor-face)
+       (enum_assignment
+        name: (property_identifier) @font-lock-constructor-face)
+
+       (variable_declarator
+        name: (identifier) @font-lock-variable-name-face)
+       (for_in_statement
+        left: (identifier) @font-lock-variable-name-face)
+
+       (arrow_function
+        parameters:
+        [(_ (identifier) @font-lock-variable-name-face)
+         (_ (_ (identifier) @font-lock-variable-name-face))
+         (_ (_ (_ (identifier) @font-lock-variable-name-face)))]))
+
+      :language ,language
+      :feature property
+      ((property_signature
+        name: (property_identifier) @font-lock-property-name-face)
+       (public_field_definition
+        name: (property_identifier) @font-lock-property-name-face)
+
+       (pair key: (property_identifier) @font-lock-property-use-face)
+       ((shorthand_property_identifier) @font-lock-property-use-face)
+       (member_expression
+        property: (property_identifier) @rh-font-lock-property-deref-face))
+
+      :language ,language
+      :feature expression
+      ((assignment_expression
+        left: [(identifier) @font-lock-function-name-face
+               (member_expression
+                property: (property_identifier) @rh-font-lock-method-name-face)]
+        right: ,(vector `(,func-exp) '(arrow_function)))
+
+       (pair
+        key: (property_identifier) @font-lock-method-name-face
+        value: (arrow_function)))
+
+      :language ,language
+      :override t
+      :feature function
+      ((call_expression
+        function: [(identifier) @font-lock-function-call-face
+                   (member_expression
+                    property: (property_identifier) @rh-font-lock-method-call-face)]))
+
+      :language ,language
+      :feature pattern
+      ((pair_pattern
+        key: (property_identifier) @font-lock-property-use-face
+        value: [(identifier) @font-lock-variable-name-face
+                (assignment_pattern left: (identifier) @font-lock-variable-name-face)])
+
+       (array_pattern (identifier) @font-lock-variable-name-face)
+
+       ((shorthand_property_identifier_pattern) @font-lock-variable-name-face))
+
+      ;; TODO jsx
+
+      :language ,language
+      :feature number
+      ((number) @font-lock-number-face
+       ((identifier) @font-lock-number-face
+        (:match ,(rx string-start (or "NaN" "Infinity") string-end) @font-lock-number-face)))
+
+      :language ,language
+      :feature operator
+      ([,@typescript-ts-mode--operators] @font-lock-operator-face
+       (ternary_expression ["?" ":"] @font-lock-operator-face))
+
+      :language ,language
+      :feature bracket
+      ((["(" ")" "[" "]" "{" "}"]) @font-lock-bracket-face)
+
+      :language ,language
+      :override t
+      :feature constructor-bracket
+      ((object ["{" "}"] @rh-font-lock-implicit-constructor-face)
+       (array ["[" "]"] @rh-font-lock-implicit-constructor-face))
+
+      :language ,language
+      :feature delimiter
+      ((["," "." ";" ":"]) @font-lock-delimiter-face)
+
+      :language ,language
+      :feature escape-sequence
+      :override t
+      ((escape_sequence) @font-lock-escape-face)
+
+      :language ,language
+      :feature label
+      ((labeled_statement
+        label: (statement_identifier) @rh-font-lock-label-face
+        ":" @rh-font-lock-label-face))
+
+      :language ,language
+      :override t
+      :feature constructor
+      ((import_specifier
+        !alias
+        name: (identifier) @rh-font-lock-constructor-face
+        (:match ,(rx string-start pascal-case string-end) @rh-font-lock-constructor-face))
+       (new_expression
+        constructor: (identifier) @rh-font-lock-constructor-face)
+       (member_expression
+        object: (identifier) @rh-font-lock-constructor-face
+        (:match ,(rx string-start pascal-case string-end) @rh-font-lock-constructor-face)))
+
+      :language ,language
+      :override t
+      :feature type-import
+      ((import_specifier
+        "type"
+        !alias
+        name: (identifier) @font-lock-type-face)
+       (import_specifier
+        "type"
+        alias: (identifier) @font-lock-type-face)
+       (import_statement
+        "type"
+        (import_clause
+         (named_imports (import_specifier
+                         alias: (identifier) @font-lock-type-face))))
+       (import_statement
+        "type"
+        (import_clause
+         (named_imports (import_specifier
+                         !alias
+                         name: (identifier) @font-lock-type-face))))))))
+#+end_src
+
+****** typescript-ts-mode :package:
+
+#+begin_src elisp
+(defun rh/typescript-ts-mode-h ()
+  "Custom typescript-ts-mode hook"
+  (rh/treesit-append-font-lock-settings
+   :language 'typescript
+   :override t
+   :feature 'constructor
+   '((import_specifier
+      name: (identifier) @rh-font-lock-constructor-face
+      (:match "\\`[A-Z][A-Za-z0-9_]*\\'" @rh-font-lock-constructor-face))
+     (new_expression
+      constructor: (identifier) @rh-font-lock-constructor-face))
+
+   :language 'typescript
+   :override t
+   :feature 'property-member
+   '((member_expression
+      property: (property_identifier) @rh-font-lock-property-deref-face))
+
+   :language 'typescript
+   :override t
+   :feature 'method
+   '((call_expression
+      function: (member_expression
+                 property: (property_identifier) @rh-font-lock-method-call-face)))
+
+   :language 'typescript
+   :override t
+   :feature 'label
+   '((labeled_statement
+      label: (statement_identifier) @rh-font-lock-label-face
+      ":" @rh-font-lock-label-face)))
+
+  (setq-local treesit-font-lock-settings
+              (apply #'treesit-font-lock-rules
+                     (rh/typescript-treesit-font-lock-rules 'typescript)))
+
+  ;; (rh/treesit-append-font-lock-feature-at 3 'punctuation)
+  (rh/treesit-append-font-lock-feature-at 4 'constructor
+                                          'type-import
+                                          'property-member
+                                          'template-string
+                                          'constructor-bracket
+                                          'method
+                                          'label)
+  (rh/treesit-font-lock-refresh))
+
+(use-package typescript-ts-mode
+  :mode
+  ("\\.ts\\'" . typescript-ts-mode)
+  :config
+  (add-hook 'typescript-ts-mode-hook #'rh/typescript-ts-mode-h)
+  (add-hook 'typescript-ts-mode-hook #'lsp))
+#+end_src
+
+***** Web
+
+***** Cryptography
+
+****** x509-mode :package:
+
+#+begin_src elisp
+(use-package x509-mode
+  :commands (x509-viewcert
+             x509-viewcrl
+             x509-viewkey
+             x509-viewpublickey
+             x509-viewdh
+             x509-viewreq
+             x509-viewpkcs7
+             x509-viewasn1
+             x509-dwim)
+  :defer t)
+#+end_src
+
+***** Vue
+
+****** vue-ts-mode :package:
+
+#+begin_src elisp
+(use-package vue-ts-mode
+  :mode
+  ("\\.vue\\'" . vue-ts-mode)
+  :hook
+  (vue-ts-mode . lsp)
+  :defer t)
+#+end_src
+
+***** PHP
+
+***** Go
+
+****** go-ts-mode :package:
+
+#+begin_src elisp
+(use-package go-ts-mode
+  :mode
+  ("\\.go\\'" . go-ts-mode)
+  ("/go\\.mod\\'" . go-mod-ts-mode)
+  :defer t)
+#+end_src
+
+***** Bicep
+
+****** bicep-ts-mode :package:
+
+#+begin_src elisp
+(use-package bicep-ts-mode
+  :mode
+  ("\\.bicep\\(param\\)?\\'" . bicep-ts-mode)
+  :hook
+  (bicep-ts-mode . lsp)
+  :defer t)
+#+end_src
+
+****** lsp-bicep :package:
+
+#+begin_src elisp
+(use-package lsp-bicep
+  :after (lsp-mode)
+  :config
+  (add-to-list 'lsp-language-id-configuration '(bicep-ts-mode . "bicep"))
+  :defer t)
+#+end_src
+
+***** SQL
+
+****** LSP
+
+[[https://emacs-lsp.github.io/lsp-mode/page/lsp-sqls/]]
+
+#+begin_src elisp
+(setq lsp-sqls-workspace-config-path "root")
+#+end_src
+
+**** Fixes & Workarounds
+
+***** JSON Null-characters
+
+The emacs json-parser does not like null-characters.
+
+#+begin_src elisp
+(advice-add 'json-parse-string :around
+            (lambda (orig string &rest rest)
+              (apply orig (s-replace "\\u0000" "" string)
+                     rest)))
+
+(advice-add 'json-parse-buffer :around
+            (lambda (oldfn &rest args)
+              (save-excursion
+                (while (search-forward "\\u0000" nil t)
+                  (replace-match "" nil t)))
+                  (apply oldfn args)))
+#+end_src
+
+*** Snippets
+
+**** Haskell
+
+***** import ~Data.Text~ :file:
+
+#+begin_src snippet :tangle "snippets/haskell-mode/Text"
+# name: import Data.Text
+# key: <T
+# group: imports
+# --
+import Data.Text (Text)
+import qualified Data.Text as Text
+#+end_src
+
+***** import ~Data.Text.Lazy~ :file:
+
+#+begin_src snippet :tangle "snippets/haskell-mode/TextLazy"
+# name: import Data.Text.Lazy
+# key: <TL
+# group: imports
+# condition: (looking-back "^<TL" nil)
+# --
+import qualified Data.Text.Lazy (Text as Lazy) as Text
+import qualified Data.Text.Lazy as Text.Lazy
+#+end_src
+
+** Doom
+
+Here, I store the configuration that is specific for Doom emacs.
 For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configure emacs.
 
-** Packages
+#+begin_src nix :tangle "doomemacs-config.nix"
+{
+  files = [./packages.el ./config.el ./shared-config.el];
+}
+#+end_src
+
+*** Packages :file:
 :PROPERTIES:
-:header-args:elisp: :tangle "packages.el"
+:header-args:elisp+: :tangle "packages.el"
 :END:
 
 #+begin_src elisp :comments none
 ;;; $DOOMDIR/packages.el -*- lexical-binding: t; -*-
-#+end_src
 
-*** Enabling packages
-
-#+begin_src elisp
-(package! homebrew-mode)
-
-(package! company-nginx)
-(package! nginx-mode)
-(package! x509-mode)
-
-(package! tidal)
-(package! xkcd)
-
-(package! poly-markdown)
-(package! polymode)
-(package! ob-fsharp)
-
-(package! org-tree-slide)
-
-(package! evil-cleverparens)
-
-(package! eglot-fsharp)
-(package! bicep-ts-mode)
-
-(package! mmm-mode)
-
-(package! swagg)
-
-(package! kurecolor)
-
-(package! org-cv
-  :recipe (:type git
-           :host gitlab
-           :repo "Titan-C/org-cv"
-           :files ("*.el")))
-
-(package! unison-ts-mode
-  :recipe (:type git
-           :host github
-           :repo "fmguerreiro/unison-ts-mode"
-           :files ("*.el")))
-#+end_src
-
-*** Disabling default packages
-
-#+begin_src elisp
 (package! evil-escape :disable t)
 #+end_src
 
-** Configuration
+*** Configuration :file:
 :PROPERTIES:
-:header-args:elisp: :tangle "config.el"
+:header-args:elisp+: :tangle "config.el"
 :END:
 
 This section defines the ~config.el~ file.
 
-#+begin_src elisp :comments none
+#+begin_src elisp :comments none :noweb yes
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-(load! "./nix-deps.el")
+;;; The shared Emacs config starts here.
+<<shared-config>>
+;;; The shared Emacs config ends here.
+
 #+end_src
 
 | Macro            | Description                                                   |
@@ -92,46 +1337,20 @@ This section defines the ~config.el~ file.
 | ~add-load-path!~ | Adding directories to the ~load-path~, relative to this file. |
 | ~map!~           | Adding bindings.                                              |
 
-*** Personal Information
+**** Personal Information
 
 #+begin_src elisp
 (setq user-full-name "Roel Hemerik"
       user-mail-address "roel@shared.nl")
 #+end_src
 
-**** CV
+**** Tools and Utils
 
-#+begin_src elisp :tangle no
-(use-package! ox-altacv
-  :load-path "~/.doom.d/.local/straight/build-29.4/org-cv/"
-  :init (require 'ox-altacv))
-#+end_src
-
-*** Tuning
-
-This section concerns properties that
-
-**** Garbage Collection
-
-#+begin_src elisp
-(after! gcmh
-  (setq gcmh-high-cons-threshold (* 64 1024 1024)))
-#+end_src
-
-**** LSP
-
-#+begin_src elisp
-(setq read-process-output-max  (* 1024 1024)
-      lsp-file-watch-threshold 2000)
-#+end_src
-
-*** Tools and Utils
-
-**** Settings (~myconf~)
+***** Settings (~myconf~)
 
 Some utility functions to manage this configuration. Might be a good idea to migrate this to a separate package in the future.
 
-***** Configuration Variables
+****** Configuration Variables
 
 Here, define the configuration variables for the function we define later on.
 
@@ -150,7 +1369,7 @@ Only has an effect of ~myconf-open-config-in-other-frame~ is non-nil")
   "The name of the workspace in which the settings will be opened.")
 #+end_src
 
-***** Open Settings
+****** Open Settings
 
 These functions allow me to quickly open this configuration from anywhere.
 
@@ -179,65 +1398,9 @@ On MacOS, it should open the configuration just like any other application.
 (map! "s-," #'myconf-open-config-org)
 #+end_src
 
-**** Uuid
+***** JWT-tokens
 
-Inspired by:
-
-#+begin_src elisp
-(defun xah-insert-random-uuid ()
-  "Insert a UUID.
-This commands calls “uuidgen” on MacOS, Linux, and calls PowelShell on Microsoft Windows.
-URL `http://xahlee.info/emacs/emacs/elisp_generate_uuid.html'
-Version: 2020-06-04 2023-05-13"
-  (interactive)
-  (cond
-   ((eq system-type 'windows-nt)
-    (shell-command "pwsh.exe -Command [guid]::NewGuid().toString()" t))
-   ((eq system-type 'darwin) ; Mac
-    (shell-command "uuidgen" t))
-   ((eq system-type 'gnu/linux)
-    (shell-command "uuidgen" t))
-   (t
-    ;; code here by Christopher Wellons, 2011-11-18.
-    ;; and editted Hideki Saito further to generate all valid variants for "N" in xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx format.
-    (let ((xstr (md5 (format "%s%s%s%s%s%s%s%s%s%s"
-                              (user-uid)
-                              (emacs-pid)
-                              (system-name)
-                              (user-full-name)
-                              (current-time)
-                              (emacs-uptime)
-                              (garbage-collect)
-                              (buffer-string)
-                              (random)
-                              (recent-keys)))))
-      (insert (format "%s-%s-4%s-%s%s-%s"
-                      (substring xstr 0 8)
-                      (substring xstr 8 12)
-                      (substring xstr 13 16)
-                      (format "%x" (+ 8 (random 4)))
-                      (substring xstr 17 20)
-                      (substring xstr 20 32)))))))
-#+end_src
-
-But I need it also in lowercase.
-
-#+begin_src elisp
-(defun roelhem/random-uuid ()
-  (substring (shell-command-to-string "uuidgen") 0 -1))
-
-(defun roelhem/random-lowercase-uuid ()
-  (downcase (roelhem/random-uuid)))
-
-(defun roelhem/insert-random-uuid-lowercase ()
-  "Insert a lowercase UUID"
-  (interactive)
-  (insert (roelhem/random-lowercase-uuid)))
-#+end_src
-
-**** JWT-tokens
-
-***** Get JWT Body
+****** Get JWT Body
 
 #+begin_src elisp
 (defun jwt-parse-string (value &rest args)
@@ -251,21 +1414,16 @@ But I need it also in lowercase.
     (append (mapcar nth-decoded '(0 1)) (nth 2 parts))))
 #+end_src
 
-**** Azure
+***** Azure
 
-***** Login
+****** Login
 
 #+begin_src elisp
 (defun az-login ()
   (shell-command "az login --allow-no-subscriptions"))
 #+end_src
 
-***** OAuth2
-
-****** Client Credential Flow
-
-
-***** Getting Microsoft Graph Access Token
+****** Getting Microsoft Graph Access Token
 
 #+begin_src elisp
 (defun ms-graph--get-access-token (&rest scopes)
@@ -275,7 +1433,7 @@ But I need it also in lowercase.
     (substring (shell-command-to-string (concat command scope-str)) 0 -1)))
 #+end_src
 
-***** CLI Transient
+****** CLI Transient
 
 #+begin_src elisp :tangle no
 (transient-define-prefix az-transient ()
@@ -292,7 +1450,7 @@ But I need it also in lowercase.
   :default "json")
 #+end_src
 
-****** Account
+******* Account
 
 #+begin_src elisp :tangle no
 (transient-define-prefix az-account ()
@@ -306,7 +1464,7 @@ But I need it also in lowercase.
    ("ss" "Show" transient-quit-one)])
 #+end_src
 
-***** Keybindings
+****** Keybindings
 
 #+begin_src elisp :tangle no
 (map! :leader
@@ -314,63 +1472,14 @@ But I need it also in lowercase.
       :desc "AZ cli" "s-a" #'az-transient)
 #+end_src
 
-**** Swagg
-
-This is an amazing package by [[https://isamert.net][Isa Mert Gurbuz]] that works as a swagger ui inside emacs.
-
-***** Setup
-
-#+begin_src elisp
-(use-package! swagg
-  :commands (swagg-request
-             swagg-display-headers
-             swagg-request-with-rest-block
-             swagg-invalidate-cache))
-#+end_src
-
-***** APIs
-
-#+begin_src elisp
-(setq
- swagg-definitions
- '((:name "GitHub"
-    :json "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
-    :base "https://api.github.com")
-   (:name "Azure AppConfiguration [stable v1.0]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/appconfiguration/data-plane/Microsoft.AppConfiguration/stable/1.0/appconfiguration.json")
-   (:name "Azure WebPubSub [stable 2023-07-01]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/webpubsub/data-plane/WebPubSub/stable/2023-07-01/webpubsub.json")
-   (:name "Azure KeyVault BackupRestore [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/backuprestore.json")
-   (:name "Azure KeyVault Certificates [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/certificates.json")
-   (:name "Azure KeyVault Common [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/common.json")
-   (:name "Azure KeyVault Keys [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/keys.json")
-   (:name "Azure KeyVault RBAC [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/rbac.json")
-   (:name "Azure KeyVault Secrets [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/secrets.json")
-   (:name "Azure KeyVault SecurityDomain [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/securitydomain.json")
-   (:name "Azure KeyVault Settings [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/settings.json")
-   (:name "Azure KeyVault Storage [stable v7.4]"
-    :json "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/data-plane/Microsoft.KeyVault/stable/7.4/storage.json")))
-#+end_src
-
-Sources:
- - [[https://github.com/Azure/azure-rest-api-specs][Azure REST-API Specs GitHub-repository]]
-
-**** Htmlize
+***** Htmlize
 
 #+begin_src elisp
 (setq htmlize-html-major-mode 'web-mode
       htmlize-css-name-prefix "emacs-")
 #+end_src
 
-**** NX
+***** NX
 
 #+begin_src elisp
 (load! "~/.myconf/emacs/lisp/nx-mode.el")
@@ -380,11 +1489,11 @@ Sources:
       "p n R" #'nx-project-run-target)
 #+end_src
 
-*** Appearance
+**** Appearance
 
 This section configures how emacs looks.
 
-**** Theme
+***** Theme
 
 This sets the default theme for emacs.
 
@@ -394,11 +1503,11 @@ This sets the default theme for emacs.
 
 To load another theme, use the ~load-theme~ function (=SPC h t=).
 
-**** Colors
+***** Colors
 
 I am missing some colors!
 
-***** One Dark
+****** One Dark
 
 These are the colors of the original OneDark theme from Atom which I am used to.
 
@@ -447,9 +1556,9 @@ The following function makes it easier to access these colors:
   (alist-get name one-dark-colors))
 #+end_src
 
-**** Font faces
+***** Font faces
 
-***** Fonts
+****** Fonts
 
 Fonts can be set using the following variables. /Source: The default emacs =config.el= file./
 
@@ -474,7 +1583,7 @@ as small as possible.
 (setq doom-font-increment 1)
 #+end_src
 
-***** TreeSitter Highlighting
+****** TreeSitter Highlighting
 
 First some helper functions to make it easier to define extra tree-sitter faces.
 
@@ -511,23 +1620,21 @@ Then add some faces that are missing anyway
 (defface tree-sitter-hl-face:character nil nil)
 #+end_src
 
-**** Formatting
-
-***** Glyphs
-
-The characters/strings used to indicate things in emacs.
+****** Others
 
 #+begin_src elisp
-(setq truncate-string-ellipsis "…")
+(custom-set-faces!
+  `(tstools-query-match-1
+    :foreground "#000"
+    :background ,(doom-color 'orange)
+    :weight bold)
+  `(tstools-query-match-capture-label
+    :slant italic
+    :height 0.8
+    :foreground ,(doom-color 'orange)))
 #+end_src
 
-***** Date/Time
-
-#+begin_src elisp
-(display-time-mode 1) ; Enables the display-time minor-mode.
-#+end_src
-
-**** Dashboard
+***** Dashboard
 
 #+begin_src elisp :tangle no
 (defvar rh/xkcd-dashboard-banner t
@@ -608,7 +1715,7 @@ The characters/strings used to indicate things in emacs.
   (insert (make-string 30 ?\n)))
 #+end_src
 
-***** Enabled widgets
+****** Enabled widgets
 
 #+begin_src elisp
 (setq +doom-dashboard-functions
@@ -616,7 +1723,7 @@ The characters/strings used to indicate things in emacs.
         doom-dashboard-widget-shortmenu))
 #+end_src
 
-***** Keymap
+****** Keymap
 
 #+begin_src elisp :tangle no
 (setq +doom-dashboard-banner-padding '(0 . 100))
@@ -631,99 +1738,73 @@ The characters/strings used to indicate things in emacs.
 
 #+end_src
 
-*** Treesitter
-
-**** Language grammars
-
-***** Source list
-
-#+begin_src elisp
-(setq treesit-language-source-alist
-      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-        (cmake "https://github.com/uyha/tree-sitter-cmake")
-        (make "https://github.com/alemuller/tree-sitter-make")
-        (css "https://github.com/tree-sitter/tree-sitter-css")
-        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-        (go "https://github.com/tree-sitter/tree-sitter-go")
-        (html "https://github.com/tree-sitter/tree-sitter-html")
-        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-        (python "https://github.com/tree-sitter/tree-sitter-python")
-        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-        (toml "https://github.com/tree-sitter/tree-sitter-toml")
-        (json "https://github.com/tree-sitter/tree-sitter-json")
-        (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-        (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
-        (php "https://github.com/tree-sitter/tree-sitter-php" "master")
-        (bicep "https://github.com/tree-sitter-grammars/tree-sitter-bicep")
-        (unison "https://github.com/fmguerreiro/tree-sitter-unison-kylegoetz" "build/include-parser-in-src-control")))
-#+end_src
-
-***** Bulk install
-
-#+begin_src elisp
-(defun +treesit-install-all-language-grammars ()
-  "Installs all tree sitter language grammars defined in ~treesit-language-source-alist~."
-  (interactive)
-  (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist)))
-#+end_src
-
-*** Editor
-
-Concerns text-buffers and ~evil-mode~.
-
-**** Line numbers
-
-This determines the style of line numbers in the editor.
-
-#+begin_src elisp
-(setq display-line-numbers-type 'relative)
-#+end_src
-
-The allowed values:
-
-| Value       | Description           |
-|-------------+-----------------------|
-| ~nil~       | No line numbers       |
-| ~t~         | Normal line numbers.  |
-| ~'relative~ | Relative line numbers |
-
-**** Behaviour
-
-#+begin_src elisp
-(setq undo-limit (* 64 1024 1024)
-      auto-save-default t)
-#+end_src
-
-**** Evil
-
-#+begin_src elisp
-(setq evil-kill-on-visual-paste nil
-      evil-respect-visual-line-mode t
-      evil-ex-substitute-global t)
-#+end_src
-
-*** Key-bindings
+**** Key-bindings
 
 This section configures my custom key-bindings.
 
-**** Leader
+***** Evil
+
+****** Global normal
+
+#+begin_src elisp
+(map! :n "] TAB" #'persp-next
+      :n "[ TAB" #'persp-prev)
+#+end_src
+
+***** Leader
 
 Keybinds on the leader (~SPC~).
 
-***** Insert (~SPC g~)
+#+begin_src elisp
+(define-key! [remap persp-switch-to-buffer] nil)
+(map! :leader
+      "<" #'persp-switch-to-buffer)
+#+end_src
+
+#+begin_src elisp
+(map! :leader
+      :prefix ("TAB" . "perspectives")
+      "TAB" #'persp-switch
+      "d" #'persp-kill
+      "D" #'persp-remove-by-name
+      "n" #'persp-add-new
+      "]" #'persp-next
+      "[" #'persp-prev)
+#+end_src
+
+****** Help (~SPC h~)
+
+#+begin_src elisp
+(map! :leader
+      :prefix "h"
+      "j" #'describe-keymap)
+#+end_src
+
+****** Buffer (~SPC b~)
+
+#+begin_src elisp
+(map! :leader
+      :prefix ("b t" . "treesit")
+      "l" #'rh/treesit-set-local-font-lock-level
+      "L" #'rh/treesit-set-font-lock-level)
+#+end_src
+
+****** Insert (~SPC g~)
 
 #+begin_src elisp
 (map! :leader
       :prefix "i"
-      :desc "Uppercase UUID" "G" #'xah-insert-random-uuid
-      :desc "Lowercase UUID" "g" #'roelhem/insert-random-uuid-lowercase)
+      :desc "Uppercase UUID" "G" #'rh/insert-random-uuid
+      :desc "Lowercase UUID" "g" #'rh/insert-random-uuid-lowercase)
+
+(map! :leader
+      :prefix ("i t" . "Current Time")
+      :desc "Timestamp in s" "s" #'rh/insert-current-timestamp)
 #+end_src
 
-***** Explain (~SPC e~)
+****** Explain (~SPC e~)
 
-****** Flycheck
+******* Flycheck
 
 #+begin_src elisp
 (after! flycheck
@@ -733,7 +1814,7 @@ Keybinds on the leader (~SPC~).
         :desc "Error list" "E" #'list-flycheck-errors))
 #+end_src
 
-****** LSP
+******* LSP
 
 #+begin_src elisp
 (after! lsp
@@ -743,21 +1824,31 @@ Keybinds on the leader (~SPC~).
         :desc "LSP session" "L" #'lsp-describe-session))
 #+end_src
 
-***** Toggle (~SPC t~)
+****** Toggle (~SPC t~)
 
-****** TreeSitter Debug
+******* TreeSitter Debug
 
 Explain the syntax as seen by ~tree-sitter~.
 
 #+begin_src elisp
 (map! :leader
       :prefix "t"
-      :desc "TreeSitter Debug Mode" "t" #'tree-sitter-debug-mode)
+      :desc "Treesit Explore Mode" "t" #'treesit-explore-mode)
 #+end_src
 
-***** Code (~SPC c~)
+******* Nix-prettify
 
-****** TreeSitter Query
+Toggle prettify modes
+
+#+begin_src elisp
+(map! :leader
+      :prefix "t"
+      :desc "Nix Prettify Mode" "N" #'nix-prettify-mode)
+#+end_src
+
+****** Code (~SPC c~)
+
+******* TreeSitter Query
 
 #+begin_src elisp
 (map! :leader
@@ -765,18 +1856,30 @@ Explain the syntax as seen by ~tree-sitter~.
       "q" #'tree-sitter-query-builder)
 #+end_src
 
-***** Frames (~SPC F~)
+****** Frames (~SPC F~)
 
 Add a frames section to the leader.
 
 #+begin_src elisp
 (map! :leader
       :prefix ("F" . "frame")
+      :desc "Right frame" "l" #'rh/select-frame-monitor-right
+      :desc "Left frame" "h" #'rh/select-frame-monitor-left
+      :desc "Close frame" "d" #'delete-frame
       :desc "Clear frame" "c" #'doom/delete-frame-with-prompt
       :desc "Undelete frame" "u" #'undelete-frame)
 #+end_src
 
-***** Special Files (~SPC o ,~)
+****** Window
+
+#+begin_src elisp
+(map! :leader
+      :prefix ("w" . "window")
+      "h" #'rh/windmove-left
+      "l" #'rh/windmove-right)
+#+end_src
+
+****** Special Files (~SPC o ,~)
 
 #+begin_src elisp
 (defconst rh/special-files/hosts "/etc/hosts"
@@ -791,38 +1894,16 @@ Add a frames section to the leader.
       :prefix ("o ," . "special files")
       :desc rh/special-files/hosts "h" #'rh/special-files-open/hosts)
 #+end_src
-**** Evil states
 
-***** Page scrolling
-
-I like ~h,j,k,l~! also ~s-h,s-j,s-k,s-l~ seem to be unused, so lets bind them so that they handle scrolling large buffers!
-
-#+begin_src elisp
-(map! :n "s-h" #'evil-scroll-left
-      :n "s-j" #'evil-scroll-down
-      :n "s-k" #'evil-scroll-up
-      :n "s-l" #'evil-scroll-left)
-#+end_src
-
-**** Which-key
+***** Which-key
 
 Configure the helpers for key-bindings
 
-***** Behaviour
-
-#+begin_src elisp
-(setq which-key-idle-delay 0.5
-      which-key-allow-multiple-replacements t
-      which-key-show-operator-state-map t
-      which-key-use-C-h-commands nil
-      which-key-show-remaining-keys t)
-#+end_src
-
-***** TODO Scrollable which-key pages
+****** TODO Scrollable which-key pages
 
 This might be do-able using ~which-key-show-next-page-no-cycle~ and ~which-key-show-previous-page-no-cycle~
 
-***** Key replacements
+****** Key replacements
 
 Make the hints from =which-key= more readable by replacing common prefixes by symbols.
 
@@ -835,20 +1916,15 @@ Make the hints from =which-key= more readable by replacing common prefixes by sy
     "g z" "multiple-cursors"))
 #+end_src
 
-**** Restart LSP
+***** Restart LSP
 
 #+begin_src elisp
-(defun +lsp-restart ()
-  "Restarts the LSP workspace"
-  (interactive)
-  (lsp-restart-workspace))
-
 (map! :after lsp-mode
       :leader
-      "h r l" #'+lsp-restart)
+      "h r l" #'lsp-workspace-restart)
 #+end_src
 
-**** LSP describe session
+***** LSP describe session
 
 #+begin_src elisp
 (map! :after lsp-mode
@@ -856,21 +1932,24 @@ Make the hints from =which-key= more readable by replacing common prefixes by sy
       "h s-l" #'lsp-describe-session)
 #+end_src
 
-**** Format buffer
+***** Format buffer
 
 #+begin_src elisp
 (map! :leader
       "b f" #'+format/buffer)
 #+end_src
 
-*** Frames
+**** Frames
 
-**** MacOS Fullscreen
+***** MacOS Fullscreen
 
 And after I toggled full-screen, I want the initial window to be as large as possible.
 
 #+begin_src elisp
 (add-to-list 'initial-frame-alist '(fullscreen-restore . maximized))
+(add-to-list 'default-frame-alist '(left . 0))
+(add-to-list 'default-frame-alist '(right . 0))
+(add-to-list 'default-frame-alist '(fullscreen . fullscreen))
 #+end_src
 
 To ensure that emacs uses the MacOS-native way of fullscreen on toggle, I overwrite the =toggle-frame-fullscreen= function.
@@ -890,52 +1969,17 @@ To ensure that emacs uses the MacOS-native way of fullscreen on toggle, I overwr
                (fullscreen-restore . ,fullscreen))))))
 #+end_src
 
-*** Filesystem
-
-**** Default directories
-
-#+begin_src elisp
-(setq org-directory "~/org/")
-#+end_src
-
-
-**** Project files
-
-#+begin_src elisp
-(let ((ld 'lsp-file-watch-ignored-directories)
-      (lf 'lsp-file-watch-ignored-files))
-  (with-eval-after-load 'lsp-mode
-    (add-to-list ld "[/\\\\]\\.nx\\'")
-    (add-to-list ld "[/\\\\]vendor\\'")
-    (add-to-list ld "[/\\\\]dist\\'")
-    (add-to-list ld "[/\\\\]\\.postman\\'")
-    (add-to-list ld "[/\\\\]\\.spago\\'")
-    (add-to-list ld "[/\\\\]\\.phpunit.cache\\'")
-    (add-to-list ld "[/\\\\]doomemacs"))
-)
-#+end_src
-
-*** Languages
+**** Languages
 
 This section concerns the configuration specific to certain programming languages.
 
-**** JSON
-
-***** Json to TypeScript
-
-#+begin_src elisp
-(defun rh/json-schema-to-typescript-buffer ()
-  (interactive)
-  (shell-command))
-#+end_src
-
-**** Haskell
+***** Haskell
 
 My favorite language!
 
-***** TreeSitter
+****** TreeSitter
 
-****** Highlighting Patterns
+******* Highlighting Patterns
 
 #+begin_src elisp
 (tshelper-add-patterns 'haskell 'haskell-mode
@@ -974,7 +2018,7 @@ My favorite language!
     ((strict_type) @type.strict)])
 #+end_src
 
-****** Highlighting Overrides
+******* Highlighting Overrides
 
 First, define a variable that holds the mappings of the capture names to the faces.
 
@@ -1052,20 +2096,20 @@ Here, we define the extra faces we need.
   `(+haskell-qq-body :inherit org-block :foreground ,(one-dark-color 'green)))
 #+end_src
 
-***** HLS
+****** HLS
 
 These options configure the haskell language server.
 
-****** Formatter
+******* Formatter
 
 #+begin_src elisp
 (after! lsp-haskell
   (setq lsp-haskell-formatting-provider "fourmolu"))
 #+end_src
 
-***** Interactive Mode
+****** Interactive Mode
 
-****** Hoogle Config
+******* Hoogle Config
 
 #+begin_src elisp
 (custom-set-variables
@@ -1073,7 +2117,7 @@ These options configure the haskell language server.
  '(haskell-interactive-types-for-show-ambiguous t))
 #+end_src
 
-****** Evil Bindings
+******* Evil Bindings
 
 Override some evil bindings so that insert mode will always insert at the prompt.
 
@@ -1161,7 +2205,7 @@ Save in REGISTER or the kill-ring with YANK_HANDLER"
 
 Next, we define some evil-like bindings to quickly walk through the interactive console.
 
-****** Toggle print mode
+******* Toggle print mode
 
 This command toggles the mode in which the results of ghci will be displayed.
 
@@ -1179,7 +2223,7 @@ This command toggles the mode in which the results of ghci will be displayed.
   (setq haskell-interactive-mode-eval-mode 'haskell-mode))
 #+end_src
 
-****** Enable lookups
+******* Enable lookups
 
 Enables lookups from a GHCI-window!
 
@@ -1188,7 +2232,7 @@ Enables lookups from a GHCI-window!
   :definition #'haskell-mode-jump-to-def)
 #+end_src
 
-****** Pop-ups
+******* Pop-ups
 
 Pop-up of the repl itself:
 
@@ -1214,7 +2258,7 @@ Pop-up that shows the errors:
 (set-popup-rule! "^\\*HS-Error\\*" :size 12 :quit t :vslot 0)
 #+end_src
 
-***** TODO Haddock editing
+****** TODO Haddock editing
 
 Lots of improvements can be made here!
 
@@ -1234,7 +2278,7 @@ Lots of improvements can be made here!
 
 Should be implemented using the [[https://haskell-haddock.readthedocs.io/en/latest/markup.html][the haddock markup documentation]].
 
-***** TODO Find definitions everywhere
+****** TODO Find definitions everywhere
 
 I would like to have find definition (aka ~K~) also in the response of ~haskell-interactive-mode~ and in ~lsp-help-mode~.
 
@@ -1242,21 +2286,21 @@ Some possibilities are:
 - Leverage hoogle to find those definitions.
 - Use ~haskell-process-do-info~ as it seems to work in most cases...
 
-***** TODO Cleanup imports
+****** TODO Cleanup imports
 
 It would be nice to have one function with one key-binding that cleans up all the imports in a Haskell module without jumping to the imports and calling the lsp code-actions manually.
 
-***** Stack...
+****** Stack...
 
 Place to put functions to help with managing stack projects.
 
-****** TODO Jump to ~stack.yaml~
+******* TODO Jump to ~stack.yaml~
 
-****** TODO Jump to ~package.yaml~
+******* TODO Jump to ~package.yaml~
 
-****** TODO Add dependency to ~package.yaml~
+******* TODO Add dependency to ~package.yaml~
 
-***** Menu
+****** Menu
 
 Settings for the haskell menu.
 
@@ -1292,9 +2336,9 @@ Finally, we add a keybinding to toggle the haskell menu.
 (map! :leader :prefix "o" :n "h" #'+haskell-menu/toggle)
 #+end_src
 
-***** Hoogle
+****** Hoogle
 
-****** Via CLI
+******* Via CLI
 
 Defines how the hoogle command should be called from the CLI. Then also define an evil-command so that hoogle can be accessed via ~:hoogl ...~.
 
@@ -1310,15 +2354,15 @@ Defines how the hoogle command should be called from the CLI. Then also define a
   (evil-ex-define-cmd "hoogl[e]" '+evil:hoogle))
 #+end_src
 
-****** Via Browser
+******* Via Browser
 
 First add hoogle to list of web lookups.
 
 #+begin_src elisp
-(add-to-list '+lookup-provider-url-alist '("Hoogle" "https://hoogle.haskell.org/?hoogle=%s"))
+;; (add-to-list '+lookup-provider-url-alist '("Hoogle" "https://hoogle.haskell.org/?hoogle=%s"))
 #+end_src
 
-****** Keybindings
+******* Keybindings
 
 #+begin_src elisp
 (map!
@@ -1327,7 +2371,7 @@ First add hoogle to list of web lookups.
  "s h" #'haskell-hoogle)
 #+end_src
 
-***** Fixes
+****** Fixes
 
 Somehow, I needed to add this to make ~haskell-mode~ work...
 
@@ -1338,9 +2382,9 @@ Somehow, I needed to add this to make ~haskell-mode~ work...
              '("\\.hs\\'" haskell-flymake-init))
 #+end_src
 
-***** Keybindings
+****** Keybindings
 
-****** For ~haskell-mode~
+******* For ~haskell-mode~
 
 The mode for editing haskell files.
 
@@ -1353,7 +2397,7 @@ The mode for editing haskell files.
       :desc "goto imports" "i" #'haskell-navigate-imports)
 #+end_src
 
-****** For ~haskel-cabal-mode~
+******* For ~haskel-cabal-mode~
 
 #+begin_src elisp
 (map! :after haskell-cabal
@@ -1362,7 +2406,7 @@ The mode for editing haskell files.
       :desc "compile" "b" #'haskell-compile)
 #+end_src
 
-****** For ~haskell-interactive-mode~
+******* For ~haskell-interactive-mode~
 
 The mode for running ~ghci~.
 
@@ -1373,7 +2417,7 @@ The mode for running ~ghci~.
       :desc "Toggle GHCI output" "t" #'haskell-interactive-toggle-print-mode)
 #+end_src
 
-****** For ~haskell-error-mode~
+******* For ~haskell-error-mode~
 
 The mode for errors that occur in ~ghci~.
 
@@ -1383,19 +2427,17 @@ The mode for errors that occur in ~ghci~.
       :vinm "<escape>" #'+popup/quit-window)
 #+end_src
 
-**** Unison
+***** Unison
 
-***** LSP
+****** LSP
 
 #+begin_src elisp
 ; (push '((unison-ts-mode) "127.0.0.1" 5757) eglot-server-programs)
 #+end_src
 
-**** Elisp
+***** Web
 
-**** Web
-
-***** No LSP format.
+****** No LSP format.
 
 The lsp formatter is conflicting with prettier. Better to always use prettier if possible.
 
@@ -1403,54 +2445,9 @@ The lsp formatter is conflicting with prettier. Better to always use prettier if
 (setq-hook! 'web-mode-hook +format-with-lsp nil)
 #+end_src
 
-**** FSharp
+***** Vue
 
-***** Configure Eglot
-
-#+begin_src elisp
-(use-package! eglot-fsharp
-  :defer t)
-#+end_src
-
-**** Bicep
-
-#+begin_src elisp
-(add-to-list 'auto-mode-alist '("\\.bicep\\'" . bicep-ts-mode))
-
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-language-id-configuration '(bicep-ts-mode . "bicep"))
-  (lsp-register-client
-   (make-lsp-client :new-connection(lsp-stdio-connection '("dotnet" "/usr/local/bin/bicep-langserver/Bicep.LangServer.dll"))
-                    :activation-fn (lsp-activate-on "bicep")
-                    :server-id 'bicep-langserver)))
-
-(defun roelhem/bicep-ts-mode-tweaks ()
-  (setq-local comment-start "// "))
-
-(add-hook 'bicep-ts-mode-hook #'lsp!)
-(add-hook 'bicep-ts-mode-hook #'roelhem/bicep-ts-mode-tweaks)
-#+end_src
-
-**** Vue
-
-***** Define Vue-mode for volar
-
-#+begin_src elisp
-(define-derived-mode vue-mode web-mode "Vue"
-  "A major mode derived from web-mode, for editing .vue files with volar language server.")
-
-(add-to-list 'auto-mode-alist '("\\.vue\\'" . vue-mode))
-#+end_src
-
-***** Enable LSP/Eglot mode
-
-This uses the ~lsp!~ function from doom-emacs, which automatically sets the lsp-client to ~lsp~ or ~eglot~, depending on the ~init.el~ file.
-
-#+begin_src elisp
-(add-hook 'vue-mode-hook #'lsp!)
-#+end_src
-
-***** Ensure Eglot uses Volar
+****** Ensure Eglot uses Volar
 
 The following function generates the volar configuration for eglot.
 
@@ -1484,9 +2481,9 @@ Then, we add it to the list of eglot language servers.
   (add-hook 'vue-mode-hook 'eglot-ensure))
 #+end_src
 
-**** PHP
+***** PHP
 
-***** Intelephense
+****** Intelephense
 
 The =lsp=-package fogot to implement some lsp-settings for the =intelephense=-server. Therefore, I'll add them here.
 
@@ -1504,17 +2501,17 @@ The =lsp=-package fogot to implement some lsp-settings for the =intelephense=-se
     :lsp-path "intelephense.environment.includePaths"))
 #+end_src
 
-**** C#
+***** C#
 
-***** Enable LSP-mode
+****** Enable LSP-mode
 
 #+begin_src elisp
 (add-hook 'csharp-tree-sitter-mode-hook #'lsp!)
 #+end_src
 
-**** Brewfile
+***** Brewfile
 
-***** Major-mode
+****** Major-mode
 
 A ~Brewfile~ is essentially just a stripped-down version of a ~ruby~ script. Therefore, we can use ~ruby-mode~ to define a new mode for Brewfiles.
 
@@ -1528,9 +2525,9 @@ For now, we will only activate this mode for files named =Brewfile= or files wit
 (add-to-list 'auto-mode-alist '("[/.]Brewfile\\'" . brewfile-mode))
 #+end_src
 
-**** GraphQL
+***** GraphQL
 
-***** Enable GraphQL in ~js~ and ~ts~.
+****** Enable GraphQL in ~js~ and ~ts~.
 
 #+begin_src elisp
 (after! mmm-mode
@@ -1543,33 +2540,24 @@ For now, we will only activate this mode for files named =Brewfile= or files wit
   (setq mmm-global-mode 'maybe))
 #+end_src
 
-**** Nix
+***** Nix
 
 #+begin_src elisp
 (setq lsp-nix-nil-auto-eval-inputs nil)
 #+end_src
-*** Modes
+**** Modes
 
 This section concerns the configuration specific to modes.
 
-**** Elfeed
+***** Tidal
 
-***** Feeds
-
-#+begin_src elisp
-(setq elfeed-feeds
-      '("https://opendata.cbs.nl/ODataCatalog/Tables"))
-#+end_src
-
-**** Tidal
-
-***** Parameters
+****** Parameters
 
 #+begin_src elisp
 (setq tidal-boot-script-path "~/workspace/tidal/BootTidal.hs")
 #+end_src
 
-***** Key-bindings
+****** Key-bindings
 
 #+begin_src emacs-lisp
 (after! tidal
@@ -1600,11 +2588,11 @@ This section concerns the configuration specific to modes.
 
 #+end_src
 
-**** Org
+***** Org
 
-***** Tree Slides
+****** Tree Slides
 
-****** Setup
+******* Setup
 
 #+begin_src elisp
 (use-package org-tree-slide
@@ -1612,7 +2600,7 @@ This section concerns the configuration specific to modes.
   (org-image-actual-width nil))
 #+end_src
 
-****** Keybindings
+******* Keybindings
 
 #+begin_src elisp
 (map! :after org-tree-slide
@@ -1621,7 +2609,7 @@ This section concerns the configuration specific to modes.
       "<f6>" 'org-tree-slide-move-next-tree)
 #+end_src
 
-***** Keybindings
+****** Keybindings
 
 On the local leader:
 
@@ -1633,7 +2621,7 @@ On the local leader:
       :desc "tangle" "RET" #'org-babel-tangle)
 #+end_src
 
-**** Yasnippets
+***** Yasnippets
 
 Configures ~snippet-mode~ for ~yasnippets~.
 
@@ -1646,30 +2634,11 @@ Configures ~snippet-mode~ for ~yasnippets~.
       :desc "Tryout snippet" "t" #'yas-tryout-snippet)
 #+end_src
 
-*** Fixes & Workarounds
 
-This section defines workarounds for unexpected behaviour.
+* Not Yet Decided
 
-**** Json null-characters
+** TODO Decide a new theme
 
-The emacs json-parser does not like null-characters. The following advices ensure that there are no null-characters in the input-strings of a json.
+- ~doom-ayu-mirage~
 
-#+begin_src elisp
-(advice-add 'json-parse-string :around
-            (lambda (orig string &rest rest)
-              (apply orig (s-replace "\\u0000" "" string)
-                     rest)))
-
-(advice-add 'json-parse-buffer :around
-            (lambda (oldfn &rest args)
-              (save-excursion
-                (while (search-forward "\\u0000" nil t)
-                  (replace-match "" nil t)))
-                  (apply oldfn args)))
-#+end_src
-
-* References
-
-** Literate configuration
-
-- [[https://tecosaur.github.io/emacs-config/config.html]]
+* References :nonum:

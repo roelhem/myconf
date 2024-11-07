@@ -49,6 +49,20 @@ in
     ocp-indent = mkToolOptions ocamlPackages.ocp-indent;
     dune = mkToolOptions pkgs.dune_3;
     ocamlformat = mkToolOptions ocamlPackages.ocamlformat;
+
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
   };
 
   config = {
@@ -62,6 +76,12 @@ in
       ++ optional cfg.ocamlformat.enable ocamlformat;
 
     programs.opam = mkIf cfg.enable { enable = true; };
+
+    programs.emacs.doomConfig.init.lang.ocaml = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
   };
 
 }

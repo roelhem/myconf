@@ -24,7 +24,7 @@ let
   phpmd = cfg.phpmd.package;
   php-codesniffer = cfg.php-codesniffer.package;
   phing = cfg.phing.package;
-  psysh = cfg.psysh.package;
+  # psysh = cfg.psysh.package;
 
   mkPhpOptions = package: {
     enable = mkOption {
@@ -50,6 +50,27 @@ in
       description = "The default php package to use.";
     };
 
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    hack = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     composer = mkPhpOptions ppkgs.composer;
     psalm = mkPhpOptions ppkgs.psalm;
     phpstan = mkPhpOptions ppkgs.phpstan;
@@ -59,7 +80,7 @@ in
     phpmd = mkPhpOptions ppkgs.phpmd;
     php-codesniffer = mkPhpOptions ppkgs.php-codesniffer;
     phing = mkPhpOptions ppkgs.phing;
-    psysh = mkPhpOptions ppkgs.psysh;
+    # psysh = mkPhpOptions ppkgs.psysh;
     phpactor = mkPhpOptions pkgs.phpactor;
   };
 
@@ -75,9 +96,16 @@ in
       ++ optional cfg.phpmd.enable phpmd
       ++ optional cfg.php-codesniffer.enable php-codesniffer
       ++ optional cfg.phing.enable phing
-      ++ optional cfg.psysh.enable psysh
+      # ++ optional cfg.psysh.enable psysh
       ++ optional cfg.phpactor.enable phpactor;
 
     programs.emacs.setq = mkIf cfg.phpactor.enable { lsp-phpactor-path = "${phpactor}/bin/phpactor"; };
+
+    programs.emacs.doomConfig.init.lang.php = {
+      enable = mkDefault cfg.enable;
+      hack = mkDefault cfg.hack.enable;
+      lsp = mkDefault cfg.lsp.enable;
+      tree-sitter = mkDefault cfg.tree-sitter.enable;
+    };
   };
 }

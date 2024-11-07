@@ -10,6 +10,15 @@
       "/.direnv/"
       "/.devenv/"
       "/result"
+      # org
+      "scratch.org"
+      "project.org"
+      "todo.org"
+      "notes.org"
+      "changelog.org"
+      # Auth info
+      "/.authinfo"
+      "/.authinfo.gpg"
       # mac
       ".DS_Store"
       ".AppleDouble"

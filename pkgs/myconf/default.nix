@@ -6,6 +6,6 @@
 
 {
   myconf-switch = writeScriptBin "myconf-switch" ''
-    ${darwin-rebuild}/bin/darwin-rebuild switch --flake ${myconf-dir}
+    ${darwin-rebuild}/bin/darwin-rebuild switch --flake ${myconf-dir} "$@"
   '';
 }

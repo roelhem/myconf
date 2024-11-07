@@ -26,6 +26,13 @@ in
       default = npkgs.yaml-language-server;
       description = "The `yaml-language-server` package to use";
     };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
   };
 
   config = {
@@ -37,6 +44,13 @@ in
         "--stdio"
       ];
     };
+
+    programs.emacs.doomConfig.init.lang.yaml = {
+      enable = cfg.enable;
+      lsp = cfg.lsp.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
+
   };
 
 }

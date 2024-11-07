@@ -49,6 +49,10 @@ in
       ++ optional cfg.clasp.enable clasp
       ++ optional cfg.abcl.enable abcl;
 
+    programs.emacs.doomConfig.init.lang.common-lisp = {
+      enable = cfg.enable;
+    };
+
   };
 
 }

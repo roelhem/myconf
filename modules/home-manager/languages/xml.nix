@@ -35,6 +35,10 @@ in
     home.packages = optional cfg.lsp.enable lemminx;
 
     programs.emacs.setq = mkIf cfg.lsp.enable { lsp-xml-bin-file = "${pkgs.lemminx}/bin/lemminx"; };
+
+    programs.emacs.doomConfig.init.lang.data = {
+      enable = cfg.enable;
+    };
   };
 
 }

@@ -36,6 +36,13 @@ in
   options.languages.clojure = {
     enable = mkEnableOption "{command} `clojure`";
 
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
+    };
+
     package = mkOption {
       type = types.package;
       default = pkgs.clojure;
@@ -59,6 +66,11 @@ in
 
     programs.emacs.setq = mkIf cfg.lsp.enable {
       lsp-clojure-custom-server-command = "${clojure-lsp}/bin/clojure-lsp";
+    };
+
+    programs.emacs.doomConfig.init.lang.clojure = {
+      enable = cfg.enable;
+      tree-sitter = cfg.tree-sitter.enable;
     };
   };
 

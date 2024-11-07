@@ -27,6 +27,10 @@ in
 
   config = {
     home.packages = optional cfg.enable sml;
+
+    programs.emacs.doomConfig.init.lang.sml = {
+      enable = cfg.enable;
+    };
   };
 
 }

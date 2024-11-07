@@ -1,28 +1,14 @@
 inputs: final: prev:
+
+with (final.callPackage ../pkgs/emacs) { };
+
 let
 
-  elisp = final.callPackage ../pkgs/emacs/elisp.nix { };
-
-  org-tangle = final.callPackage ../pkgs/emacs/org-tangle.nix { };
+  lib = final.lib;
 
   emacs-zsh-plugin =
     final.callPackage (final.lib.makeOverridable (import ../pkgs/emacs-zsh-plugin))
       { };
-
-  emacs-launch-editor =
-    final.callPackage (final.lib.makeOverridable (import ../pkgs/emacs/launch-editor.nix))
-      { };
-
-  lib = prev.lib // {
-    elisp = {
-      inherit (elisp)
-        toElisp
-        toElispWith
-        toSetq
-        toSetqWith
-        ;
-    };
-  };
 
   forceDarwinXWidgets =
     drv:
@@ -144,23 +130,32 @@ let
 
   emacs-plus = lib.makeOverridable mkEmacsPlus final.emacs { };
 
-  # emacs-macport = prev.emacs-macport.overrideAttrs (old: {
-  #   configureFlags = lib.lists.remove "--without-xwidgets" old.configureFlags ++ ["--with-xwidgets"];
-  # });
+  # This is the overlay for the emacs packages.
+  emacsPackagesOverlay =
+    efinal: eprev:
+    let
+      extraPackages = (final.callPackage ../pkgs/emacs/elisp-packages.nix { inherit inputs; }) efinal;
+    in
+    extraPackages;
 
 in
 {
+  emacsPackagesFor =
+    emacs:
+    let
+      scope = prev.emacsPackagesFor emacs;
+    in
+    scope.overrideScope emacsPackagesOverlay;
 
   inherit
-    lib
     emacs-plus
     emacs-zsh-plugin
     emacs-launch-editor
+    orgTangleFile
+    makeElispDerivation
+    runElispWith
+    runElisp
     ;
-
-  inherit (elisp) makeElispDerivation runElispWith runElisp;
-
-  inherit (org-tangle) orgTangleFile;
 
   inherit (final.callPackage (import ../pkgs/doomemacs inputs.doomemacs) { emacs = emacs-plus; })
     doomemacs

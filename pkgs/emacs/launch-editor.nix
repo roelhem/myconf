@@ -1,5 +1,8 @@
-{ writeShellScript, emacs }:
+{
+  writeShellScript,
+  emacs,
+}:
 
 writeShellScript "emacs-launch-editor" ''
-  ${emacs}/bin/emacsclient -n -u "+$2:$3" "$1"
+  ${emacs}/bin/emacsclient "+$2:$3" "$1"
 ''

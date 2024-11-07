@@ -17,6 +17,13 @@ in
   options.languages.sh = {
     enable = mkEnableOption "{command} sh language support";
 
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     shellcheck = {
       enable = mkOption {
         type = types.bool;
@@ -45,6 +52,11 @@ in
 
     programs.emacs.setq = mkIf cfg.shellcheck.enable {
       sh-shellcheck-program = "${shellcheck}/bin/shellcheck";
+    };
+
+    programs.emacs.doomConfig.init.lang.sh = {
+      enable = cfg.enable;
+      tree-sitter = cfg.tree-sitter.enable;
     };
   };
 }

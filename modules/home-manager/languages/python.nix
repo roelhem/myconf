@@ -36,7 +36,6 @@ let
   pyflakes = cfg.pyflakes.package;
   isort = cfg.isort.package;
   pipenv = cfg.pipenv.package;
-  # pynose = cfg.pynose.package;
   pytest = cfg.pytest.package;
 
   ppkgs = python.pkgs;
@@ -72,6 +71,48 @@ in
       description = "Extra packages to install with python";
     };
 
+    lsp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    tree-sitter = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    conda = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    cython = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    poetry = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    pyenv = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     finalPackage = mkOption {
       type = types.package;
       visible = false;
@@ -86,22 +127,33 @@ in
     # pynose = mkPythonPackageOptions ppkgs.pynose;
     pytest = mkPythonPackageOptions ppkgs.pytest;
     pylsp = mkPythonPackageOptions ppkgs.python-lsp-server;
-    nose.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
+
+    nose = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
     };
-    jupyter.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
+
+    jupyter = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
     };
-    setuptools.enable = mkOption {
-      type = types.bool;
-      default = cfg.enable;
+
+    setuptools = {
+      enable = mkOption {
+        type = types.bool;
+        default = cfg.enable;
+      };
     };
 
   };
 
   config = {
+    languages.python.finalPackage = pythonWithPackages extraPackages;
+
     home.packages =
       optional cfg.enable python
       ++ optional cfg.pylsp.enable python-lsp-server
@@ -121,6 +173,16 @@ in
       }
       // mkIf cfg.enable { lsp-ruff-lsp-python-path = "${python}/bin/python"; };
 
-    languages.python.finalPackage = pythonWithPackages extraPackages;
+    programs.emacs.doomConfig.init.lang.python = {
+      enable = cfg.enable;
+      conda = cfg.conda.enable;
+      cython = cfg.cython.enable;
+      lsp = cfg.lsp.enable;
+      poetry = cfg.poetry.enable;
+      pyenv = cfg.pyenv.enable;
+      # pyright = cfg.pyright.enable;
+      tree-sitter = cfg.tree-sitter.enable;
+    };
+
   };
 }
