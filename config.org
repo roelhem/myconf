@@ -41,27 +41,6 @@ command, but it should work fine after adjust the command slightly.
 
 Here I define all the setup steps that are nessicary to build this file.
 
-** Build outputs
-
-*** Nix results
-
-This expression is evaluated by nix and returned as the results attribute of
-the derivation that tangled this file.
-
-#+begin_src nix :tangle "results.nix"
-{ doomemacs-config = import ./doomemacs-config.nix; }
-#+end_src
-
-** Parameters
-
-*** Host-specific configuration
-
-* Nix
-
-** Users
-
-[[./home/roel.nix]]
-
 * Emacs
 
 Please myself, try to use the following convention for naming things in this config:
@@ -80,6 +59,32 @@ accidental dependencies as they are build using nix.
 These configuration items should be usable for both /Vanilla Emacs/ and /Doom Emacs/.
 I should try to put as much configuration here to prepare for the switch from
 /Doom Emacs/ to something else that is more compatible to nix.
+
+*** Dependencies
+
+**** Nix Elisp Packages :file:
+
+#+begin_src nix :tangle "emacs/shared/elisp-packages.nix"
+epkgs: with epkgs; [
+  treesit-grammars.with-all-grammars  # treesit gramars
+  myconf             # elisp package with tools to manage myconf
+  jwt                # jwt utilities
+  persp-mode         # perspectives that work between frames
+  jq-mode            # jq support
+  unison-ts-mode     # Major mode for the Unison language
+  xkcd               # access xkcd comics from emacs
+  tidal              # Jam with Tidal Cycles in emacs
+  nginx-mode         # Major mode to edit nginx config files.
+  company-nginx      # Company autocomplete for nginx
+  x509-mode          # Major mode for reading certificates
+  vterm              # Terminal emulator for emacs
+  evil-cleverparens
+  org-tree-slide     # Slideshows using org mode
+  polymode
+  poly-markdown
+  mmm-mode
+]
+#+end_src
 
 *** Tuning
 :PROPERTIES:
@@ -138,27 +143,24 @@ Just some functions to generate new random UUIDs. Inspired by [[http://xahlee.in
 (defvar rh/uuidgen-bin-path "uuidgen"
   "Path to the uuidgen binary.")
 
-(defun rh/random-uuid ()
-  "Returns a random uuid in uppercase.
+(defun rh/random-uuid (&optional lower)
+  "Generate a random uuid using the 'uuidgen' cli tool.
 
-This is using the 'uuidgen' cli tool under the hood."
-  (substring (shell-command-to-string rh/uuidgen-bin-path) 0 -1))
+Gives the uuid in lowercase if LOWER is non-nil."
+  (let ((uuid (substring
+               (shell-command-to-string rh/uuidgen-bin-path)
+               0 -1)))
+    (if lower (downcase uuid) uuid)))
 
-(defun rh/random-uuid-lowercase ()
-  "Returns a random uuid in lowercase.
-
-This is using the 'uuidgen' cli tool under the hood."
-  (downcase (rh/random-uuid)))
-
-(defun rh/insert-random-uuid ()
-  "Insert an uppercase UUID."
+(defun rh/insert-random-uuid (&optional lower)
+  "Insert an UUID."
   (interactive)
-  (insert (rh/random-uuid)))
+  (insert (rh/random-uuid lower)))
 
 (defun rh/insert-random-uuid-lowercase ()
   "Insert a lowercase UUID."
   (interactive)
-  (insert (rh/random-uuid-lowercase)))
+  (rh/insert-random-uuid t))
 #+end_src
 
 ***** Timestamps
@@ -679,11 +681,17 @@ to other editors.)
 (setq doom-modeline-persp-name t)
 
 (use-package persp-mode
-  :config (persp-mode 1)
+  :hook (after-init . persp-mode)
   :defer t)
 #+end_src
 
 **** Filesystem
+
+***** Myconf
+
+#+begin_src elisp
+(use-package myconf)
+#+end_src
 
 ***** Special Files
 
@@ -881,6 +889,15 @@ Change the regular expression
 ***** Unison
 
 ***** JSON
+
+****** jq :package:
+
+#+begin_src elisp
+(use-package jq-mode
+  :commands (jq-interactively)
+  :mode (rx ".jq" string-end)
+  :interpreter "jq")
+#+end_src
 
 ***** Typescript
 
@@ -1184,6 +1201,15 @@ Change the regular expression
   :defer t)
 #+end_src
 
+****** jwt :packages:
+
+#+begin_src elisp
+(use-package jwt
+  :autoload (jwt-create jwt-verify-signature)
+  :commands (jwt-decode jwt-decode-at-point jwt-decode-region jwt-verify-current-token)
+  :defer t)
+#+end_src
+
 ***** Vue
 
 ****** vue-ts-mode :package:
@@ -1244,6 +1270,15 @@ Change the regular expression
 (setq lsp-sqls-workspace-config-path "root")
 #+end_src
 
+***** Nginx
+
+****** nginx-mode
+
+#+begin_src elisp
+(use-package nginx-mode
+  :mode (rx "nginx.conf" string-end))
+#+end_src
+
 **** Fixes & Workarounds
 
 ***** JSON Null-characters
@@ -1270,7 +1305,7 @@ The emacs json-parser does not like null-characters.
 
 ***** import ~Data.Text~ :file:
 
-#+begin_src snippet :tangle "snippets/haskell-mode/Text"
+#+begin_src snippet :tangle "emacs/snippets/haskell-mode/Text"
 # name: import Data.Text
 # key: <T
 # group: imports
@@ -1281,7 +1316,7 @@ import qualified Data.Text as Text
 
 ***** import ~Data.Text.Lazy~ :file:
 
-#+begin_src snippet :tangle "snippets/haskell-mode/TextLazy"
+#+begin_src snippet :tangle "emacs/snippets/haskell-mode/TextLazy"
 # name: import Data.Text.Lazy
 # key: <TL
 # group: imports
@@ -1291,20 +1326,27 @@ import qualified Data.Text.Lazy (Text as Lazy) as Text
 import qualified Data.Text.Lazy as Text.Lazy
 #+end_src
 
-** Doom
+** Doom Emacs Config
 
 Here, I store the configuration that is specific for Doom emacs.
 For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configure emacs.
 
-#+begin_src nix :tangle "doomemacs-config.nix"
-{
-  files = [./packages.el ./config.el ./shared-config.el];
-}
+*** Dependencies
+
+**** Nix Elisp Packages :file:
+
+#+begin_src nix :tangle "emacs/doom/elisp-packages.nix"
+epkgs: with epkgs; [
+  corfu
+  nerd-icons-corfu
+  corfu-terminal
+  corfu-prescient
+]
 #+end_src
 
-*** Packages :file:
+**** Doom straight (~packages.el~) :file:
 :PROPERTIES:
-:header-args:elisp+: :tangle "packages.el"
+:header-args:elisp+: :tangle "emacs/doom/packages.el"
 :END:
 
 #+begin_src elisp :comments none
@@ -1313,15 +1355,30 @@ For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configu
 (package! evil-escape :disable t)
 #+end_src
 
-*** Configuration :file:
+*** Extra Init (~extra-init.el~) :file:
 :PROPERTIES:
-:header-args:elisp+: :tangle "config.el"
+:header-args:elisp+: :tangle "emacs/doom/extra-init.el"
+:END:
+
+This file will be added at the top of the ~init.el~ file of the doom config.
+
+#+begin_src elisp :comments no
+;;; $DOOMDIR/extra-init.el -*- lexical-binding: t; -*-
+#+end_src
+
+*** Configuration (~config.el~) :file:
+:PROPERTIES:
+:header-args:elisp+: :tangle "emacs/doom/config.el"
 :END:
 
 This section defines the ~config.el~ file.
 
 #+begin_src elisp :comments none :noweb yes
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+(setq custom-file "~/.local/emacs/custom.el")
+(when (file-exists-p custom-file)
+  (load custom-file))
 
 ;;; The shared Emacs config starts here.
 <<shared-config>>
@@ -1340,8 +1397,8 @@ This section defines the ~config.el~ file.
 **** Personal Information
 
 #+begin_src elisp
-(setq user-full-name "Roel Hemerik"
-      user-mail-address "roel@shared.nl")
+;; (setq user-full-name "Roel Hemerik"
+;;       user-mail-address "roel@shared.nl")
 #+end_src
 
 **** Tools and Utils
@@ -1370,27 +1427,6 @@ Only has an effect of ~myconf-open-config-in-other-frame~ is non-nil")
 #+end_src
 
 ****** Open Settings
-
-These functions allow me to quickly open this configuration from anywhere.
-
-#+begin_src elisp
-(defun myconf-open-config-org ()
-  "Open the myconf literal file."
-  (interactive)
-  (if myconf-open-config-in-other-frame
-      (let ((frame (find-file-other-frame myconf-config-org-file)))
-        (modify-frame-parameters nil `((fullscreen . fullscreen)
-                                       (name . "Settings"))))
-      (+workspace-switch myconf-config-workspace-name t)
-      (find-file myconf-config-org-file)))
-#+end_src
-
-Bind this to the workspace prefix.
-
-#+begin_src elisp
-(map! :leader
-      :desc "Settings Workspace" "TAB ," #'myconf-open-config-org)
-#+end_src
 
 On MacOS, it should open the configuration just like any other application.
 
@@ -1735,7 +1771,12 @@ Then add some faces that are missing anyway
       "l" #'rh/xkcd-next
       "n" #'rh/xkcd-next
       "<right>" #'rh/xkcd-next)
+#+end_src
 
+***** Corfu
+
+#+begin_src elisp
+(setq +corfu-want-ret-to-confirm 'minibuffer)
 #+end_src
 
 **** Key-bindings
@@ -1765,7 +1806,9 @@ Keybinds on the leader (~SPC~).
 (map! :leader
       :prefix ("TAB" . "perspectives")
       "TAB" #'persp-switch
+      "w" #'persp-window-switch
       "d" #'persp-kill
+      "k" #'persp-kill
       "D" #'persp-remove-by-name
       "n" #'persp-add-new
       "]" #'persp-next
@@ -1789,7 +1832,7 @@ Keybinds on the leader (~SPC~).
       "L" #'rh/treesit-set-font-lock-level)
 #+end_src
 
-****** Insert (~SPC g~)
+****** Insert (~SPC i~)
 
 #+begin_src elisp
 (map! :leader
@@ -2557,37 +2600,6 @@ This section concerns the configuration specific to modes.
 (setq tidal-boot-script-path "~/workspace/tidal/BootTidal.hs")
 #+end_src
 
-****** Key-bindings
-
-#+begin_src emacs-lisp
-(after! tidal
-  (map! :map tidal-mode-map
-        :n [return] #'tidal-run-multiple-lines
-        :n "1"      #'tidal-run-d1
-        :n "s-1"    #'tidal-stop-d1
-        :n "2"      #'tidal-run-d2
-        :n "s-2"    #'tidal-stop-d2
-        :n "3"      #'tidal-run-d3
-        :n "s-3"    #'tidal-stop-d3
-        :n "4"      #'tidal-run-d4
-        :n "s-4"    #'tidal-stop-d4
-        :n "5"      #'tidal-run-d5
-        :n "s-5"    #'tidal-stop-d5
-        :n "6"      #'tidal-run-d6
-        :n "s-6"    #'tidal-stop-d6
-        :n "7"      #'tidal-run-d7
-        :n "s-7"    #'tidal-stop-d7
-        :n "8"      #'tidal-run-d8
-        :n "s-8"    #'tidal-stop-d8
-        :n "9"      #'tidal-run-d9
-        :n "s-9"    #'tidal-stop-d9
-        :n "§"      #'tidal-hush)
-  (map! :leader
-        :map tidal-mode-map
-        "S" #'tidal-start-haskell))
-
-#+end_src
-
 ***** Org
 
 ****** Tree Slides
@@ -2634,6 +2646,77 @@ Configures ~snippet-mode~ for ~yasnippets~.
       :desc "Tryout snippet" "t" #'yas-tryout-snippet)
 #+end_src
 
+*** Outputs
+
+**** Nix derivation :file:
+
+#+begin_src nix :tangle "emacs/doom/buildDoomDir.nix"
+{
+  lib,                 # The combined nix library of my emacs config.
+  emacs,               # The derivation for the emacs binary used to run doom emacs.
+  themesSource,        # Path to the directory that contains the themes.
+  setq ? {},           # Gets injected in the init.el file.
+  homeDirectory ? "~", # Path to the home directory of the user.
+  ...
+}:
+
+let
+
+  inherit (lib) mkDefault;
+
+in
+
+{
+  emacsPackage = emacs;
+  localDir = mkDefault "${homeDirectory}/.local/emacs/doom/";
+  init.setq = setq;
+  file = {
+    "themes" = {
+      source = themesSource;
+      copy = true;
+    };
+    "snippets" = {
+      source = ../shared/snippets;
+      copy = true;
+    };
+    "config.el" = {
+      source = ./config.el;
+      copy = true;
+    };
+    "packages.el" = {
+      source = ./packages.el;
+      copy = true;
+    };
+    "extra-init.el" = {
+      source = ./extra-init.el;
+      copy = true;
+    };
+  };
+}
+#+end_src
+
+* Outputs
+
+** Nix Results (~results.nix~) :file:
+
+This expression is evaluated by nix and returned as the results attribute of
+the derivation that tangled this file.
+
+#+begin_src nix :tangle "results.nix"
+let
+  sharedElispPackages = import ./emacs/shared/elisp-packages.nix;
+  doomElispPackages   = import ./emacs/doom/elisp-packages.nix;
+in
+{
+  emacs.shared.elispPackages = sharedElispPackages;
+  emacs.doom.elispPackages = doomElispPackages;
+  emacs.elispPackages = epkgs:
+    sharedElispPackages epkgs
+    ++ doomElispPackages epkgs;
+
+  emacs.doom.buildDoomDir = import ./emacs/doom/buildDoomDir.nix;
+}
+#+end_src
 
 * Not Yet Decided
 
