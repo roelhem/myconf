@@ -27,8 +27,17 @@ let
         else
           [ ];
       extra' = cfg.extraPackages pypkgs;
+      numpy' =
+        if cfg.numpy.enable then
+          (with pypkgs; [
+            numpy
+            nptyping
+          ])
+        else
+          [ ];
+      matplotlib' = optional cfg.matplotlib.enable pypkgs.matplotlib;
     in
-    setuptools' ++ jupyter' ++ nose' ++ extra';
+    setuptools' ++ jupyter' ++ nose' ++ extra' ++ numpy' ++ matplotlib';
 
   python = cfg.finalPackage;
   python-lsp-server = cfg.pylsp.package;
@@ -113,6 +122,27 @@ in
       };
     };
 
+    pylint = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    numpy = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
+    matplotlib = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+      };
+    };
+
     finalPackage = mkOption {
       type = types.package;
       visible = false;
@@ -131,7 +161,7 @@ in
     nose = {
       enable = mkOption {
         type = types.bool;
-        default = cfg.enable;
+        default = false;
       };
     };
 
@@ -161,10 +191,23 @@ in
       ++ optional cfg.pyflakes.enable pyflakes
       ++ optional cfg.isort.enable isort
       ++ optional cfg.pipenv.enable pipenv
-      # ++ optional cfg.pynose.enable pynose
       ++ optional cfg.pytest.enable pytest;
 
-    programs.poetry = mkIf cfg.enable { enable = true; };
+    programs.matplotlib = mkIf cfg.matplotlib.enable {
+      enable = mkDefault true;
+    };
+
+    programs.poetry = mkIf cfg.poetry.enable {
+      enable = mkDefault true;
+    };
+
+    programs.pyenv = mkIf cfg.pyenv.enable {
+      enable = mkDefault true;
+    };
+
+    programs.pylint = mkIf cfg.pylint.enable {
+      enable = mkDefault true;
+    };
 
     programs.emacs.setq =
       mkIf cfg.pylsp.enable {
@@ -173,15 +216,21 @@ in
       }
       // mkIf cfg.enable { lsp-ruff-lsp-python-path = "${python}/bin/python"; };
 
-    programs.emacs.doomConfig.init.lang.python = {
-      enable = cfg.enable;
-      conda = cfg.conda.enable;
-      cython = cfg.cython.enable;
-      lsp = cfg.lsp.enable;
-      poetry = cfg.poetry.enable;
-      pyenv = cfg.pyenv.enable;
-      # pyright = cfg.pyright.enable;
-      tree-sitter = cfg.tree-sitter.enable;
+    programs.emacs.doomConfig.init = {
+      lang.org = mkIf cfg.jupyter.enable {
+        jupyter = true;
+      };
+
+      lang.python = {
+        enable = cfg.enable;
+        conda = cfg.conda.enable;
+        cython = cfg.cython.enable;
+        lsp = cfg.lsp.enable;
+        poetry = cfg.poetry.enable;
+        pyenv = cfg.pyenv.enable;
+        # pyright = cfg.pyright.enable;
+        tree-sitter = cfg.tree-sitter.enable;
+      };
     };
 
   };

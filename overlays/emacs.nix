@@ -151,6 +151,7 @@ in
     emacs-plus
     emacs-zsh-plugin
     emacs-launch-editor
+    emacs-sandbox
     orgTangleFile
     makeElispDerivation
     runElispWith

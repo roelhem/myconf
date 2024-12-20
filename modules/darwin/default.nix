@@ -11,6 +11,7 @@
 {
   imports = [
     ./programs/browsers.nix
+    ./programs/arduino-ide.nix
     ./services/yabai.nix
   ];
 

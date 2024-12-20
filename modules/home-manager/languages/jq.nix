@@ -51,6 +51,10 @@ in
     programs.emacs.setq = mkIf cfg.lsp.enable {
       lsp-clients-jq-server-executable = [ "${jq-lsp}/bin/jq-lsp" ];
     };
+
+    programs.emacs.doomConfig.init = mkIf cfg.enable {
+      lang.rest.jq = mkDefault true;
+    };
   };
 
 }

@@ -69,7 +69,7 @@ in
         pkgs.jsbeautifier
         pkgs.idris
       ]
-      ++ optional pkgs.stdenv.isDarwin pkgs.pngpaste
+      ++ myconf-literate-config.results.homePackages
     );
 
     programs.zsh = mkIf cfg.enableZshIntegration {

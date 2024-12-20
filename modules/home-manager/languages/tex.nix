@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  myconf-literate-config,
   ...
 }:
 
@@ -22,7 +23,7 @@ in
 
     texlab.enable = mkOption {
       type = types.bool;
-      default = cfg.enable;
+      default = false;
       description = "{command}`texlab`";
     };
 
@@ -33,14 +34,30 @@ in
   };
 
   config = {
+
+    home.packages = optional cfg.texlab.enable texlab;
+
     programs.texlive = mkIf cfg.enable {
       enable = true;
-      extraPackages = tpkgs: { inherit (tpkgs) collection-basic collection-latex; };
+      extraPackages =
+        tpkgs:
+        {
+          inherit (tpkgs)
+            collection-basic
+            collection-latex
+            ;
+        }
+        // myconf-literate-config.results.texlive.extraPackages tpkgs;
     };
 
     programs.emacs.setq =
       mkIf cfg.enable { lsp-clients-digestif-executable = "${texlive}/bin/digestif"; }
       // mkIf cfg.texlab.enable { lsp-clients-texlab-executable = "${texlab}/bin/texlab"; };
+
+    programs.emacs.doomConfig.init.lang.latex = {
+      enable = mkDefault cfg.enable;
+      lsp = mkDefault cfg.texlab.enable;
+    };
   };
 
 }

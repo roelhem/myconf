@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11";
+
     # My secrets
     # mysecrets = {
     #   url = "git+ssh://git@github.com/roelhem/mysecrets";
@@ -81,98 +83,51 @@
     inputs@{
       self,
       nixpkgs,
-      flake-utils,
-      nix-darwin,
-      home-manager,
       nix-homebrew,
       emacs-overlay,
-      homebrew-emacs-plus,
       ...
     }:
-    let
-      lib = nixpkgs.lib.extend (final: _: import ./lib final);
+    # This is just a script with helpers to clean-up the main flake file.
+    with (import ./setup {
+      # Here, I should add all the overlays/modules/packages from other
+      # files and the flake inputs.
+      inherit inputs;
 
-      # Supported systems.
-      linuxSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
+      # Add overlays from other flakes here. Custom overlays should be
+      # added to the `overlays` output of the flake.
+      overlays = [ emacs-overlay.overlays.default ];
+
+      # Add the nixos modules that should be applied to all
+      # nixosConfigurations that are made by the exported
+      # `mkNixosConfig` helper function.
+      nixosModules = [
+        ./modules/shared
+        ./modules/nixos
       ];
-      darwinSystems = [
-        "x86_64-darwin"
-        "aarch64-darwin"
+
+      # Add the nix-darwin modules that should be applied to all
+      # darwinConfigurations that are made by the exported
+      # `mkDarwinConfig` helper function.
+      darwinModules = [
+        nix-homebrew.darwinModules.nix-homebrew
+        ./modules/shared
+        ./modules/darwin
       ];
-
-      overlays = [
-        emacs-overlay.overlays.default
-        (final: prev: { lib = prev.lib // import ./lib final.lib; })
-      ] ++ builtins.attrValues self.overlays;
-
-      # System-dependent bootstrap.
-      forSystem =
-        system: f:
-        f (
-          let
-            pkgs = import nixpkgs { inherit system overlays; };
-
-            fromFlake = flake: {
-              checks = flake.checks.${system};
-              packages = flake.packages.${system};
-              apps = flake.apps.${system};
-              devShells = flake.devShells.${system};
-              formatter = flake.${system};
-              legacyPackages = flake.legacyPackages.${system};
-            };
-          in
-          {
-            inherit system pkgs;
-            self = fromFlake self;
-            nix-darwin = fromFlake nix-darwin;
-            nixpkgs = fromFlake nixpkgs;
-          }
-        );
-      forSystems = xs: f: lib.genAttrs xs (system: forSystem system f);
-
-      # System definitions.
-      forLinuxSystems = forSystems linuxSystems;
-      forDarwinSystems = forSystems darwinSystems;
-      forAllSystems = forSystems (linuxSystems ++ darwinSystems);
-
-    in
+    });
     {
-      # Helper lib
+      # My custom helper lib. It is constructed again here so that only
+      # my custom functions will be exported in this flake.
       lib = import ./lib lib;
-
-      # Formatter
-      formatter = forAllSystems ({ pkgs, ... }: pkgs.nixfmt-rfc-style);
-
-      # Packages
-      packages = forAllSystems (
-        {
-          pkgs,
-          nixpkgs,
-          nix-darwin,
-          ...
-        }:
-        {
-          inherit (pkgs) doomemacs emacs-plus bicep-langserver;
-          me = pkgs.dhallPackages.me;
-          switch = pkgs.myconf-switch;
-          myconf-literate-config = pkgs.orgTangleFile ./config.org { };
-          doom-config =
-            self.darwinConfigurations.home-studio.config.home-manager.users.roel.programs.emacs.doomConfig.finalDirPackage;
-        }
-      );
-
-      # Devshells
-      devShells = forAllSystems (
-        { pkgs, self, ... }: with pkgs; { doomemacs = mkShell { buildInputs = [ doomemacs ]; }; }
-      );
 
       # Apps
       apps =
         forDarwinSystems (
           { self, ... }:
           {
+            emacs-sandbox = {
+              type = "app";
+              program = "${self.packages.emacs-sandbox}/bin/emacs-sandbox";
+            };
             emacs = {
               type = "app";
               program = "${self.packages.emacs}/Applications/Emacs.app/Contents/MacOS/Emacs";
@@ -191,7 +146,23 @@
           }
         );
 
-      # Overlays
+      # Packages
+      packages = forAllSystems (
+        { pkgs, ... }:
+        {
+          inherit (pkgs) doomemacs emacs-plus bicep-langserver;
+          me = pkgs.dhallPackages.me;
+          switch = pkgs.myconf-switch;
+          myconf-literate-config = pkgs.orgTangleFile ./config.org { };
+          emacs-sandbox = pkgs.emacs-sandbox;
+          # doom-config =
+          #  self.darwinConfigurations.home-studio.config.home-manager.users.roel.programs.emacs.doomConfig.finalDirPackage;
+        }
+      );
+
+      # The custom overlays that I use. These will all be added to the global
+      # overlays in the ./setup/default.nix file. I export them here mainly for
+      # debugging purposes.
       overlays = {
         emacs = import ./overlays/emacs.nix inputs;
         custom-pkgs = import ./overlays/custom-pkgs.nix inputs;
@@ -200,51 +171,38 @@
         python = import ./overlays/python.nix inputs;
       };
 
-      # NixOS
-      nixosConfigurations = {
+      # ====== DevTools ======
+      # Dev Shells
+      devShells = forAllSystems (
+        { pkgs, self, ... }: with pkgs; { doomemacs = mkShell { buildInputs = [ doomemacs ]; }; }
+      );
 
+      # Formatter
+      formatter = forAllSystems ({ pkgs, ... }: pkgs.nixfmt-rfc-style);
+
+      # ====== EMACS ======
+      # Emacs Configurations.
+      emacsConfigurations = mkEmacsConfigs {
+        default = [ { doom.enable = true; } ];
       };
 
-      # MacOS
-      darwinConfigurations =
-        let
+      # Emacs Modules.
+      emacsModules = { };
 
-          mkDarwinConfig =
-            system: modules:
-            nix-darwin.lib.darwinSystem {
-              inherit system;
-              specialArgs = {
-                inherit lib;
-              };
-              modules = [
-                (
-                  { pkgs, ... }:
-                  {
-                    _module.args = {
-                      inherit (inputs) homebrew-core homebrew-cask homebrew-bundle;
-                      inherit inputs;
-                      myconf-literate-config = self.packages."${system}".myconf-literate-config;
-                      nixpkgsOverlays = overlays;
-                      nixformatter = self.formatter."${system}";
-                      me = self.packages."${system}".me;
-                      defaultUser = {
-                        name = "roel";
-                      };
-                    };
-                  }
-                )
-                home-manager.darwinModules.home-manager
-                nix-homebrew.darwinModules.nix-homebrew
-                ./modules/shared
-                ./modules/darwin
-              ] ++ modules;
-            };
+      # ====== NixOS ======
+      # NixOS Configurations.
+      nixosConfigurations = { };
 
-        in
-        {
-          "home-imac" = mkDarwinConfig "x86_64-darwin" [ ./hosts/darwin/home-imac ];
-          "home-studio" = mkDarwinConfig "aarch64-darwin" [ ./hosts/darwin/home-studio ];
-        };
+      # NixOS Modules
+      nixosModules = { };
 
+      # ====== MacOS / Darwin ======
+      # nix-darwin Configurations.
+      darwinConfigurations = {
+        "home-imac" = mkDarwinConfig "x86_64-darwin" [ ./hosts/darwin/home-imac ];
+        "home-studio" = mkDarwinConfig "aarch64-darwin" [ ./hosts/darwin/home-studio ];
+      };
+
+      darwinModules = { };
     };
 }

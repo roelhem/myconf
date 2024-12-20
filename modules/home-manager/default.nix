@@ -9,6 +9,7 @@
     ./programs/editorconfig.nix
     ./programs/openscad.nix
     ./programs/zsh.nix
+    ./languages/arduino.nix
     ./languages/agda.nix
     ./languages/cmake.nix
     ./languages/cc.nix
@@ -27,6 +28,7 @@
     ./languages/php.nix
     ./languages/perl.nix
     ./languages/go.nix
+    ./languages/rust.nix
     ./languages/dockerfile.nix
     ./languages/jq.nix
     ./languages/toml.nix

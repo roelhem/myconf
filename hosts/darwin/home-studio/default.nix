@@ -42,6 +42,12 @@
     yabai.enable = false;
   };
 
+  purposes = {
+    research.enable = true;
+    dev.frontend.enable = true;
+    dev.embedded.enable = true;
+  };
+
   programs = {
     bash.enable = true;
     zsh = {
@@ -50,13 +56,6 @@
     };
 
     nix-index.enable = true;
-    info.enable = true;
-    man.enable = true;
-
-    chromium.enable = true;
-    google-chrome.enable = true;
-    opera.enable = true;
-    firefox.enable = true;
   };
 
   homebrew = {

@@ -3,7 +3,8 @@
   emacs,
   runCommand,
   callPackage,
-}:
+  ...
+}@pkgs:
 
 let
   defaultEmacs = emacs;
@@ -86,20 +87,21 @@ rec {
         }
       );
 
+      resultArgs = pkgs // builtins.removeAttrs env [ "load" ];
+
       results =
         let
+          inherit (builtins) pathExists isFunction;
           resultsFile = "${drv}/results.nix";
+          value = import resultsFile;
         in
-        if builtins.pathExists resultsFile then
-          let
-            value = import resultsFile;
-          in
-          if builtins.isFunction value then callPackage value env else value
+        if pathExists resultsFile then
+          (if isFunction value then callPackage value resultArgs else value)
         else
           null;
-
     in
     drv // { inherit results; };
 
   emacs-launch-editor = callPackage ./launch-editor.nix { };
+  emacs-sandbox = callPackage ./sandbox { };
 }

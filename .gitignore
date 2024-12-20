@@ -17,3 +17,7 @@ cabal.project.local
 /playgrounds
 
 scratch.org
+
+# Node
+.pnpm
+node_packages

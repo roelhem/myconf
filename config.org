@@ -7,6 +7,7 @@
 #+property: header-args:elisp :export code :lexical t
 #+startup: fold
 #+startup: showstars
+#+startup: latexpreview
 
 * About :nonum:
 
@@ -62,6 +63,16 @@ I should try to put as much configuration here to prepare for the switch from
 
 *** Dependencies
 
+**** Nix Home Packages :file:
+
+List of dependencies that need to be installed in the home directory for this
+config to work. This value should be added to the [[https://nix-community.github.io/home-manager/options.xhtml#opt-home.packages][home.packages]] option in the
+nix config.
+
+#+begin_src nix :tangle "emacs/shared/home-packages.nix"
+pkgs: []
+#+end_src
+
 **** Nix Elisp Packages :file:
 
 #+begin_src nix :tangle "emacs/shared/elisp-packages.nix"
@@ -83,6 +94,8 @@ epkgs: with epkgs; [
   polymode
   poly-markdown
   mmm-mode
+  applescript-mode   # Editing applescript
+  ob-applescript     # org babel for applescript
 ]
 #+end_src
 
@@ -685,6 +698,26 @@ to other editors.)
   :defer t)
 #+end_src
 
+***** External Editors
+
+#+begin_src elisp
+(defun rh/open-file-in-intellij ()
+  "Opens the current file in intellij"
+  (interactive)
+  (let* ((filename (buffer-file-name))
+         (line (number-to-string (locate-current-line-number)))
+         (col (number-to-string (current-column)))
+         (cmd (concat "phpstorm --line " line " --column " col " " filename)))
+    (start-process-shell-command "open-phpstorm" "*open-phpstorm*" cmd)))
+#+end_src
+
+#+begin_src elisp
+(map! :leader
+      :prefix "o"
+      "j" #'rh/open-file-in-intellij)
+#+end_src
+
+
 **** Filesystem
 
 ***** Myconf
@@ -783,6 +816,13 @@ Settings specific to Emacs org-mode.
 (setq org-directory "~/org/")
 #+end_src
 
+****** Org Protocol
+
+#+begin_src elisp
+(with-eval-after-load 'org
+  (require 'org-protocol))
+#+end_src
+
 ****** Appearance
 
 #+begin_src elisp
@@ -792,8 +832,9 @@ Settings specific to Emacs org-mode.
 ****** Links
 
 #+begin_src elisp
-;; (add-to-list 'org-link-abbrev-alist '("myconf" . "file:~/.myconf/%s"))
-;; (add-to-list 'org-link-abbrev-alist '("workspace" . "file:~/workspace/%s"))
+(with-eval-after-load 'org
+  (add-to-list 'org-link-abbrev-alist '("myconf" . "file:~/.myconf/%s"))
+  (add-to-list 'org-link-abbrev-alist '("workspace" . "file:~/workspace/%s")))
 #+end_src
 
 ****** Tags
@@ -821,6 +862,19 @@ Settings specific to Emacs org-mode.
 
 #+begin_src elisp
 (setq org-clock-idle-time 10)
+#+end_src
+
+****** LaTeX
+
+#+begin_src elisp
+(setq org-preview-latex-default-process 'dvisvgm)
+#+end_src
+
+****** Babel
+
+#+begin_src elisp
+(with-eval-after-load 'org
+  (require 'ob-shell))
 #+end_src
 
 ***** Elisp
@@ -1235,6 +1289,8 @@ Change the regular expression
   ("\\.go\\'" . go-ts-mode)
   ("/go\\.mod\\'" . go-mod-ts-mode)
   :defer t)
+
+(add-hook 'go-ts-mode-hook #'lsp)
 #+end_src
 
 ***** Bicep
@@ -1279,6 +1335,17 @@ Change the regular expression
   :mode (rx "nginx.conf" string-end))
 #+end_src
 
+***** AppleScript
+
+****** applescript-mode
+
+#+begin_src elisp
+(use-package applescript-mode
+  :mode (rx "." (or "applescript" "scpt") string-end)
+  :interpreter "osascript"
+  :defer t)
+#+end_src
+
 **** Fixes & Workarounds
 
 ***** JSON Null-characters
@@ -1301,37 +1368,24 @@ The emacs json-parser does not like null-characters.
 
 *** Snippets
 
-**** Haskell
-
-***** import ~Data.Text~ :file:
-
-#+begin_src snippet :tangle "emacs/snippets/haskell-mode/Text"
-# name: import Data.Text
-# key: <T
-# group: imports
-# --
-import Data.Text (Text)
-import qualified Data.Text as Text
-#+end_src
-
-***** import ~Data.Text.Lazy~ :file:
-
-#+begin_src snippet :tangle "emacs/snippets/haskell-mode/TextLazy"
-# name: import Data.Text.Lazy
-# key: <TL
-# group: imports
-# condition: (looking-back "^<TL" nil)
-# --
-import qualified Data.Text.Lazy (Text as Lazy) as Text
-import qualified Data.Text.Lazy as Text.Lazy
-#+end_src
-
 ** Doom Emacs Config
 
 Here, I store the configuration that is specific for Doom emacs.
 For now, I use [[https://github.com/doomemacs/doomemacs][Doom Emacs]] to configure emacs.
 
 *** Dependencies
+
+**** Nix Home Packages :file:
+
+List of dependencies that need to be installed in the home directory for this
+config to work. This value should be added to the [[https://nix-community.github.io/home-manager/options.xhtml#opt-home.packages][home.packages]] option in the
+nix config.
+
+#+begin_src nix :tangle "emacs/doom/home-packages.nix"
+{ lib, stdenv, ghostscript, pngpaste }: [
+  ghostscript
+] ++ lib.optional stdenv.isDarwin pngpaste
+#+end_src
 
 **** Nix Elisp Packages :file:
 
@@ -1525,6 +1579,14 @@ On MacOS, it should open the configuration just like any other application.
       "p n R" #'nx-project-run-target)
 #+end_src
 
+***** Special files
+
+#+begin_src elisp
+(defun rh/open-doom-init ()
+ (interactive)
+ (find-file (concat (getenv "DOOMDIR") "init.el")))
+#+end_src
+
 **** Appearance
 
 This section configures how emacs looks.
@@ -1608,8 +1670,8 @@ Fonts can be set using the following variables. /Source: The default emacs =conf
 
 
 #+begin_src elisp
-(setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'regular)
-      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 15))
+(setq doom-font (font-spec :family "Fira Code" :size 14 :weight 'regular)
+      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 14))
 #+end_src
 
 Using ~s-=~ and ~s--~, changes the font size (default from /doom-emacs/). Lets make the step
@@ -2648,6 +2710,22 @@ Configures ~snippet-mode~ for ~yasnippets~.
 
 *** Outputs
 
+**** Emacs Config Module :file:
+
+#+begin_src nix :tangle "emacs/doom/emacs-module.nix"
+{ lib, ... }:
+
+with lib;
+
+{
+  config.doom = {
+      file."config.el".source = ./config.el;
+      file."packages.el".source = ./packages.el;
+      file."extra-init.el".source = ./extra-init.el;
+  };
+}
+#+end_src
+
 **** Nix derivation :file:
 
 #+begin_src nix :tangle "emacs/doom/buildDoomDir.nix"
@@ -2675,10 +2753,6 @@ in
       source = themesSource;
       copy = true;
     };
-    "snippets" = {
-      source = ../shared/snippets;
-      copy = true;
-    };
     "config.el" = {
       source = ./config.el;
       copy = true;
@@ -2695,6 +2769,88 @@ in
 }
 #+end_src
 
+** Snippets
+
+*** YaSnippet
+
+**** Haskell
+
+***** import ~Data.Text~ :file:
+
+#+begin_src snippet :tangle "emacs/snippets/yasnippet/haskell-mode/Text"
+# name: import Data.Text
+# key: <T
+# group: imports
+# --
+import Data.Text (Text)
+import qualified Data.Text as Text
+#+end_src
+
+***** import ~Data.Text.Lazy~ :file:
+
+#+begin_src snippet :tangle "emacs/snippets/yasnippet/haskell-mode/TextLazy"
+# name: import Data.Text.Lazy
+# key: <TL
+# group: imports
+# condition: (looking-back "^<TL" nil)
+# --
+import qualified Data.Text.Lazy (Text as Lazy) as Text
+import qualified Data.Text.Lazy as Text.Lazy
+#+end_src
+
+*** Outputs
+
+**** Nix Emacs Config Module :file:
+
+#+begin_src nix :tangle "emacs/snippets/emacs-module.nix"
+{ lib, config, ... }: with lib;
+
+let
+  cfg = config.snippets;
+in
+{
+  options.snippets.enable = mkOption {
+    type = types.bool;
+    default = true;
+  };
+
+  config = mkIf cfg.enable {
+    initDirectory.file.snippets.source = ./yasnippet;
+    doom.file.snippets.source = ./yasnippet;
+  };
+}
+#+end_src
+
+* LaTeX
+
+I can configure LaTeX here because I will only write LaTeX with emacs anyway.
+
+$\mathcal{C}(N)$
+
+** TeX Live
+
+Configuration of the [[https://www.tug.org/texlive/][TeX Live]] libraries.
+
+*** Nix Dependencies
+
+Here, I define which packages I need from nix. See the article about
+[[https://nixos.wiki/wiki/TexLive][TexLive in the NixOS wiki]] for a description on how this works.
+
+#+begin_src nix :tangle "latex/texlive/extraPackages.nix"
+tpkgs: {
+  inherit (tpkgs)
+    scheme-medium
+    dvisvgm
+    dvipng
+    wrapfig
+    amsmath
+    ulem
+    hyperref
+    capt-of
+    ;
+}
+#+end_src
+
 * Outputs
 
 ** Nix Results (~results.nix~) :file:
@@ -2703,18 +2859,39 @@ This expression is evaluated by nix and returned as the results attribute of
 the derivation that tangled this file.
 
 #+begin_src nix :tangle "results.nix"
+{ lib, callPackage, ... }:
 let
-  sharedElispPackages = import ./emacs/shared/elisp-packages.nix;
-  doomElispPackages   = import ./emacs/doom/elisp-packages.nix;
+  inherit (builtins) filter concatMap;
+  inherit (lib) filesystem strings lists;
+
+  # List of all the output files after tangling this file.
+  outFiles = filesystem.listFilesRecursive ./.;
+
+  # Function that takes a suffix and returns a list of all output
+  # files that end with the provided suffix.
+  outFilesEndingWith = suffix: filter (strings.hasSuffix suffix) outFiles;
 in
 {
-  emacs.shared.elispPackages = sharedElispPackages;
-  emacs.doom.elispPackages = doomElispPackages;
-  emacs.elispPackages = epkgs:
-    sharedElispPackages epkgs
-    ++ doomElispPackages epkgs;
+  inherit outFiles outFilesEndingWith;
+  # The packages that should be added to the home.packages option
+  # from home-manager.
+  homePackages = concatMap
+    (file: callPackage (import file) { })
+    (outFilesEndingWith "home-packages.nix");
 
+  # The elisp package dependencies.
+  emacs.elispPackages = epkgs: concatMap
+    (file: import file epkgs)
+    (outFilesEndingWith "elisp-packages.nix");
+
+  # Legacy options for the doom config directory.
   emacs.doom.buildDoomDir = import ./emacs/doom/buildDoomDir.nix;
+
+  # TexLive latex package definitions.
+  texlive.extraPackages = import ./latex/texlive/extraPackages.nix;
+
+  # Module for emacs configurations.
+  emacs.module.imports = outFilesEndingWith "emacs-module.nix";
 }
 #+end_src
 

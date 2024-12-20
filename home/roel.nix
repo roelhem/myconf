@@ -61,6 +61,9 @@
       push = {
         autoSetupRemote = true;
       };
+      init = {
+        defaultBranch = "main";
+      };
       github = {
         user = "roelhem";
       };
@@ -193,6 +196,7 @@
           dragndrop = true;
           roam2 = true;
         };
+        rest.enable = true;
         web = {
           enable = true;
           tree-sitter = true;
@@ -225,16 +229,31 @@
 
   languages = {
     markdown.enable = true;
-    python.enable = true;
+    python = {
+      enable = true;
+      matplotlib.enable = true;
+      numpy.enable = true;
+      jupyter.enable = true;
+      lsp.enable = true;
+      poetry.enable = true;
+      tree-sitter.enable = true;
+      extraPackages =
+        pypkgs:
+        (with pypkgs; [
+          psycopg2
+          types-psycopg2
+        ]);
+    };
     julia.enable = true;
     dotnet.enable = true;
-    bicep.enable = true;
+    bicep.enable = false;
     nix = {
       enable = true;
       nixfmt.enable = true;
       lsp.enable = true;
       tree-sitter.enable = true;
     };
+    arduino.enable = true;
     agda.enable = true;
     coq.enable = true;
     haskell.enable = true;
@@ -244,10 +263,17 @@
       enable = true;
       tree-sitter.enable = true;
     };
-    tex.enable = true;
+    tex = {
+      enable = true;
+      texlab.enable = true;
+    };
     vue.enable = true;
     sh.enable = true;
     go.enable = true;
+    rust = {
+      enable = true;
+      lsp.enable = true;
+    };
     nginx.enable = true;
     idris2.enable = true;
     cc.enable = true;
