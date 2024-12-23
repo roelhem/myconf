@@ -20,7 +20,10 @@ in
 
   config = mkIf cfg.enable {
     programs.arduino-ide.enable = true;
+
+    environment.systemPackages = [
+      pkgs.fritzing
+    ];
   };
 
-  environment.systemPackages = [ pkgs.fritzing ];
 }

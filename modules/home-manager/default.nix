@@ -9,6 +9,7 @@
     ./programs/editorconfig.nix
     ./programs/openscad.nix
     ./programs/zsh.nix
+    ./programs/arduino-cli.nix
     ./languages/arduino.nix
     ./languages/agda.nix
     ./languages/cmake.nix
@@ -52,6 +53,7 @@
     ./languages/common-lisp.nix
     ./languages/scheme.nix
     ./languages/clojure.nix
+    ./languages/protobuf.nix
     ./languages/racket.nix
     ./languages/ocaml.nix
     ./languages/faust.nix

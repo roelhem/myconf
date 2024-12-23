@@ -254,6 +254,7 @@
       tree-sitter.enable = true;
     };
     arduino.enable = true;
+    arduino.lsp.enable = true;
     agda.enable = true;
     coq.enable = true;
     haskell.enable = true;
@@ -274,6 +275,7 @@
       enable = true;
       lsp.enable = true;
     };
+    protobuf.enable = true;
     nginx.enable = true;
     idris2.enable = true;
     cc.enable = true;

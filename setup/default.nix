@@ -17,6 +17,7 @@
 let
   inherit (inputs)
     nixpkgs
+    nixpkgs-stable
     home-manager
     nix-darwin
     nix-homebrew
@@ -51,6 +52,11 @@ let
         overlays = overlays';
       };
 
+      pkgs-stable = import nixpkgs-stable {
+        inherit system;
+        overlays = overlays';
+      };
+
       fromFlake = flake: {
         checks = flake.checks.${system};
         packages = flake.packages.${system};
@@ -61,10 +67,11 @@ let
       };
     in
     f {
-      inherit system pkgs;
+      inherit system pkgs pkgs-stable;
       myconf-literate-config = inputs.self.packages.${system}.myconf-literate-config;
       self = fromFlake inputs.self;
       nixpkgs = fromFlake nixpkgs;
+      nixpkgs-stable = fromFlake nixpkgs-stable;
       nix-darwin = fromFlake nix-darwin;
       nix-homebrew = fromFlake nix-homebrew;
       home-manager = fromFlake home-manager;
@@ -122,7 +129,7 @@ in
     system: modules:
     nixpkgs.lib.nixosSystem (
       forSystem system (
-        { self, ... }:
+        { self, pkgs-stable, ... }:
         {
           inherit system;
           specialArgs = {
@@ -132,15 +139,19 @@ in
               name = "roel";
             };
           };
-          modules = [
-            {
-              _module.args = {
-                nixformatter = self.formatter;
-              };
-              nixpkgs.overlays = overlays';
-            }
-            home-manager.nixosModules.home-manager
-          ] ++ nixosModules ++ modules;
+          modules =
+            [
+              {
+                _module.args = {
+                  nixformatter = self.formatter;
+                  inherit pkgs-stable;
+                };
+                nixpkgs.overlays = overlays';
+              }
+              home-manager.nixosModules.home-manager
+            ]
+            ++ nixosModules
+            ++ modules;
         }
       )
     );
@@ -150,7 +161,7 @@ in
     system: modules:
     nix-darwin.lib.darwinSystem (
       forSystem system (
-        { self, ... }:
+        { self, pkgs-stable, ... }:
         {
           inherit system;
           specialArgs = {
@@ -161,15 +172,19 @@ in
               name = "roel";
             };
           };
-          modules = [
-            {
-              _module.args = {
-                nixformatter = self.formatter;
-              };
-              nixpkgs.overlays = overlays';
-            }
-            home-manager.darwinModules.home-manager
-          ] ++ darwinModules ++ modules;
+          modules =
+            [
+              {
+                _module.args = {
+                  nixformatter = self.formatter;
+                  inherit pkgs-stable;
+                };
+                nixpkgs.overlays = overlays';
+              }
+              home-manager.darwinModules.home-manager
+            ]
+            ++ darwinModules
+            ++ modules;
         }
       )
     );

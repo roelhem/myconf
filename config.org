@@ -96,6 +96,8 @@ epkgs: with epkgs; [
   mmm-mode
   applescript-mode   # Editing applescript
   ob-applescript     # org babel for applescript
+  flycheck-eglot
+  # consult-eglot
 ]
 #+end_src
 
@@ -627,6 +629,18 @@ And now the extra faces that I want:
   "Face for references to namespace names.")
 #+end_src
 
+***** ANSI
+
+****** Minor mode
+
+#+begin_src elisp
+(define-minor-mode rh/ansi-color-mode
+  "Minor mode to display ansi colors in a buffer"
+  :init-value nil
+  (with-silent-modifications
+    (ansi-color-apply-on-region 1 (buffer-size))))
+#+end_src
+
 **** Editor
 
 This section configures how emacs behaves as a text editor.
@@ -655,7 +669,8 @@ The allowed values:
 
 #+begin_src elisp
 (setq undo-limit (* 64 1024 1024)
-      auto-save-default t)
+      auto-save-default t
+      read-quoted-char-radix 16)
 #+end_src
 
 ***** Tree Sitter (~treesit~)
@@ -715,6 +730,71 @@ to other editors.)
 (map! :leader
       :prefix "o"
       "j" #'rh/open-file-in-intellij)
+#+end_src
+
+***** LSP
+
+****** Eglot
+
+Recently, [[https://joaotavora.github.io/eglot/][Eglot]] has become the built-in lsp client of emacs. Where possible,
+I want to migrate to eglot.
+
+#+begin_src elisp
+(with-eval-after-load 'eglot
+  (setq eglot-sync-connect 1
+        eglot-autoshutdown t))
+#+end_src
+
+#+begin_src elisp
+;; (use-package consult-eglot
+;;   :defer t
+;;   :init (with-eval-after-load 'eglot
+;;           (keymap-set eglot-mode-map "<remap> <xref-find-apropos>" #'consult-eglot-symbols)))
+#+end_src
+
+Also add ~flycheck-eglot~ To ensure that eglot works with ~flycheck~.
+
+#+begin_src elisp
+(use-package flycheck-eglot
+  :defer t
+  :hook (eglot-managed-mode-hook . flycheck-eglot-mode))
+#+end_src
+
+****** ~lsp-mode~
+
+****** Using both ~lsp-mode~ and ~eglot~.
+
+Sometimes, I want to use [[https://joaotavora.github.io/eglot/][~eglot~]] and other times, I want to use [[https://emacs-lsp.github.io/lsp-mode/][~lsp-mode~]]. This
+may even depend on the project on which I am working. Here, I define some helper
+functions to make this easier.
+
+#+begin_src elisp
+(defun rh/buffer-lsp-driver ()
+  "Gets the lsp driver of the current buffer.
+
+Returns one of the following symbols:
+
+  `\\='eglot' if the current buffer is managed by eglot.
+  `\\='lsp-mode' if the current buffer is managed by lsp-mode.
+
+Returns `nil' if the current buffer is not managed by any lsp driver."
+  (cond ((and (featurep 'eglot)
+              (eglot-managed-p)) 'eglot)
+        ((and (featurep 'lsp-mode)
+              lsp-mode) 'lsp-mode)
+        (t nil)))
+
+(defun rh/lsp-rename (&optional newname)
+  "Rename the current symbol to NEWNAME."
+  (interactive)
+  (pcase (rh/buffer-lsp-driver)
+    ('eglot
+     (if newname (eglot-rename newname)
+       (call-interactively 'eglot-rename)))
+    ('lsp-mode
+     (if newname (lsp-rename newname)
+       (call-interactively 'lsp-rename)))
+    (_ (error "No LSP driver for current buffer"))))
 #+end_src
 
 
@@ -1346,6 +1426,54 @@ Change the regular expression
   :defer t)
 #+end_src
 
+***** Arduino
+
+Configuration to edit arduino code inside emacs.
+
+****** LSP
+
+Firstly, we will define the variable ~lsp-arduino-server-command~ in which we will store a list to define
+how the lsp server should be started.
+
+#+begin_src elisp
+(defvar lsp-arduino-server-command nil
+  "Command to start the arduino lsp server.")
+#+end_src
+
+#+begin_src elisp
+(setq lsp-arduino-server-command `(,(executable-find "~/workspace/roelhem/arduino-language-server/arduino-language-server")
+                                   "-clangd" ,(executable-find "clangd")
+                                   "-cli" ,(executable-find "arduino-cli")
+                                   "-cli-config" ,(file-truename "~/Library/Arduino15/arduino-cli.yaml")
+                                   "-fqbn" "arduino:avr:uno"))
+#+end_src
+
+The [[file:./modules/home-manager/languages/arduino.nix][Nix configuration file for Arduino Language Development]] sets the ~lsp-arduino-server-command~ variable.
+Therefore, we can immediately use this variable to add the lsp configurations.
+
+#+begin_src elisp
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               `(arduino-ts-mode . ,(lambda (e) (progn lsp-arduino-server-command)))))
+#+end_src
+
+****** ~arduino-ts-mode~
+
+#+begin_src elisp
+(use-package arduino-ts-mode
+  :mode (rx "." (or "pde" "ino") string-end)
+  :config (add-hook 'arduino-ts-mode-hook 'eglot-ensure)
+  :defer t)
+#+end_src
+
+****** ~arduino-cli-mode~
+
+#+begin_src elisp
+(use-package arduino-cli-mode
+  :hook (arduino-ts-mode . arduino-cli-mode)
+  :defer t)
+#+end_src
+
 **** Fixes & Workarounds
 
 ***** JSON Null-characters
@@ -1670,8 +1798,8 @@ Fonts can be set using the following variables. /Source: The default emacs =conf
 
 
 #+begin_src elisp
-(setq doom-font (font-spec :family "Fira Code" :size 14 :weight 'regular)
-      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 14))
+(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'regular)
+      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 12))
 #+end_src
 
 Using ~s-=~ and ~s--~, changes the font size (default from /doom-emacs/). Lets make the step
@@ -1875,6 +2003,11 @@ Keybinds on the leader (~SPC~).
       "n" #'persp-add-new
       "]" #'persp-next
       "[" #'persp-prev)
+#+end_src
+
+#+begin_src elisp
+(map! :map doom-leader-code-map
+      "r" #'rh/lsp-rename)
 #+end_src
 
 ****** Help (~SPC h~)
@@ -2653,6 +2786,20 @@ For now, we will only activate this mode for files named =Brewfile= or files wit
 **** Modes
 
 This section concerns the configuration specific to modes.
+
+***** Eglot
+
+#+begin_src elisp
+(with-eval-after-load 'eglot
+  (set-lookup-handlers! 'eglot--managed-mode
+    :definition #'xref-find-definitions
+    :references #'xref-find-references
+    :implementations #'eglot-find-implementation
+    :type-definition #'eglot-find-typeDefinition
+    :documentation #'eldoc))
+
+(set-popup-rule! "^\\*eldoc" :side 'right :width 120)
+#+end_src
 
 ***** Tidal
 
