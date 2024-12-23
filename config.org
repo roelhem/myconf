@@ -710,7 +710,9 @@ to other editors.)
 
 (use-package persp-mode
   :hook (after-init . persp-mode)
-  :defer t)
+  :bind (:map evil-normal-state-map
+              ("] <tab>" . persp-next)
+              ("[ <tab>" . persp-prev)))
 #+end_src
 
 ***** External Editors
@@ -1022,6 +1024,16 @@ Change the regular expression
 
 ***** Unison
 
+***** Protobuf
+
+****** ~protobuf-mode~
+
+#+begin_src elisp
+(use-package protobuf-mode
+  :mode (rx ".proto" string-end)
+  :defer t)
+#+end_src
+
 ***** JSON
 
 ****** jq :package:
@@ -1258,7 +1270,7 @@ Change the regular expression
                          name: (identifier) @font-lock-type-face))))))))
 #+end_src
 
-****** typescript-ts-mode :package:
+****** ~typescript-ts-mode~ :package:
 
 #+begin_src elisp
 (defun rh/typescript-ts-mode-h ()
@@ -1319,7 +1331,7 @@ Change the regular expression
 
 ***** Cryptography
 
-****** x509-mode :package:
+****** ~x509-mode~ :package:
 
 #+begin_src elisp
 (use-package x509-mode
@@ -1335,7 +1347,7 @@ Change the regular expression
   :defer t)
 #+end_src
 
-****** jwt :packages:
+****** ~jwt~ :package:
 
 #+begin_src elisp
 (use-package jwt
@@ -1346,7 +1358,7 @@ Change the regular expression
 
 ***** Vue
 
-****** vue-ts-mode :package:
+****** ~vue-ts-mode~ :package:
 
 #+begin_src elisp
 (use-package vue-ts-mode
@@ -1361,7 +1373,7 @@ Change the regular expression
 
 ***** Go
 
-****** go-ts-mode :package:
+****** ~go-ts-mode~ :package:
 
 #+begin_src elisp
 (use-package go-ts-mode
@@ -1375,7 +1387,7 @@ Change the regular expression
 
 ***** Bicep
 
-****** bicep-ts-mode :package:
+****** ~bicep-ts-mode~ :package:
 
 #+begin_src elisp
 (use-package bicep-ts-mode
@@ -1386,7 +1398,7 @@ Change the regular expression
   :defer t)
 #+end_src
 
-****** lsp-bicep :package:
+****** ~lsp-bicep~ :package:
 
 #+begin_src elisp
 (use-package lsp-bicep
@@ -1408,7 +1420,7 @@ Change the regular expression
 
 ***** Nginx
 
-****** nginx-mode
+****** ~nginx-mode~ :package:
 
 #+begin_src elisp
 (use-package nginx-mode
@@ -1417,7 +1429,7 @@ Change the regular expression
 
 ***** AppleScript
 
-****** applescript-mode
+****** ~applescript-mode~
 
 #+begin_src elisp
 (use-package applescript-mode
@@ -1473,7 +1485,6 @@ Therefore, we can immediately use this variable to add the lsp configurations.
   :hook (arduino-ts-mode . arduino-cli-mode)
   :defer t)
 #+end_src
-
 **** Fixes & Workarounds
 
 ***** JSON Null-characters
@@ -1575,13 +1586,6 @@ This section defines the ~config.el~ file.
 | ~after!~         | Running code after a package has loaded.                      |
 | ~add-load-path!~ | Adding directories to the ~load-path~, relative to this file. |
 | ~map!~           | Adding bindings.                                              |
-
-**** Personal Information
-
-#+begin_src elisp
-;; (setq user-full-name "Roel Hemerik"
-;;       user-mail-address "roel@shared.nl")
-#+end_src
 
 **** Tools and Utils
 
@@ -1972,15 +1976,6 @@ Then add some faces that are missing anyway
 **** Key-bindings
 
 This section configures my custom key-bindings.
-
-***** Evil
-
-****** Global normal
-
-#+begin_src elisp
-(map! :n "] TAB" #'persp-next
-      :n "[ TAB" #'persp-prev)
-#+end_src
 
 ***** Leader
 
