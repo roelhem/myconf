@@ -180,6 +180,21 @@
       # Formatter
       formatter = forAllSystems ({ pkgs, ... }: pkgs.nixfmt-rfc-style);
 
+      # Templates
+      templates = { };
+
+      # Checks
+      checks = forAllSystems (
+        { pkgs, ... }:
+        with pkgs;
+        {
+          math = runCommand "math-test" { } ''
+            test $(( 1 + 2 )) -eq 3
+            touch $out
+          '';
+        }
+      );
+
       # ====== EMACS ======
       # Emacs Configurations.
       emacsConfigurations = mkEmacsConfigs {

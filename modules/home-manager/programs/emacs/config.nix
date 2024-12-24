@@ -2,8 +2,6 @@ args@{
   config,
   lib,
   pkgs,
-  npkgs,
-  inputs,
   myconf-literate-config,
   ...
 }:
@@ -37,7 +35,7 @@ in
         type = lib.myconf.types.dir {
           modules = [
             {
-              _module.args = args;
+              _module.args = config._module.args;
               name = "doom.d";
             }
             ./doom-config-type.nix

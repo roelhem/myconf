@@ -242,7 +242,7 @@ Section for configuration to ensure that emacs runs as smooth as possible.
 
 (defvar-keymap rh/leader-buffer-map
   :doc "Keymap for \"SPC b\"."
-  "t" rh/leader-treesit-map)
+  "t" (cons "treesit" rh/leader-treesit-map))
 
 (defvar-keymap rh/leader-frame-map
   :doc "Kemap for \"SPC F\"."
@@ -254,7 +254,7 @@ Section for configuration to ensure that emacs runs as smooth as possible.
 
 (defvar-keymap rh/insert-map
   :doc "Keymap for inserting things into the buffer."
-  "t" rh/insert-timestamp-map)
+  "t" (cons "time" rh/insert-timestamp-map))
 
 (defvar-keymap rh/explain-map
   :doc "Keymap for explaining things.")
@@ -264,20 +264,20 @@ Section for configuration to ensure that emacs runs as smooth as possible.
 
 (defvar-keymap rh/open-map
   :doc "Keymap for opening things."
-  "," rh/open-special-files-map)
+  "," (cons "special file" rh/open-special-files-map))
 
 (defvar-keymap rh/leader-map
   :doc "An overriding keymap for <leader> keys.
 Inspired by `doom-leader-map'."
-  "s" rh/leader-search-map
-  "c" rh/leader-code-map
-  "b" rh/leader-buffer-map
-  "i" rh/insert-map
-  "e" rh/explain-map
-  "F" rh/leader-frame-map
-  "o" rh/open-map
-  "s-o" rh/open-special-files-map
-  "<tab>" rh/leader-persp-map)
+  "s" (cons "search" rh/leader-search-map)
+  "c" (cons "code" rh/leader-code-map)
+  "b" (cons "buffer" rh/leader-buffer-map)
+  "i" (cons "insert" rh/insert-map)
+  "e" (cons "explain" rh/explain-map)
+  "F" (cons "frame" rh/leader-frame-map)
+  "o" (cons "open" rh/open-map)
+  "s-o" (cons "special file" rh/open-special-files-map)
+  "<tab>" (cons "persp" rh/leader-persp-map))
 #+end_src
 
 ***** Evil
@@ -475,7 +475,7 @@ Some helper functions to work with frames.
   "Move to left window"
   (interactive "P")
   (condition-case nil
-      (windmove-left)
+      (evil-window-left (or arg 1))
     (user-error
      (unless (rh/select-frame-monitor-left)
        (let ((newframe (rh/make-frame-monitor-left)))
@@ -485,7 +485,7 @@ Some helper functions to work with frames.
 (defun rh/windmove-right (&optional arg)
   (interactive "P")
   (condition-case nil
-      (windmove-right)
+      (evil-window-right (or arg 1))
     (user-error
      (unless (rh/select-frame-monitor-right)
        (let ((newframe (rh/make-frame-monitor-right)))
@@ -496,15 +496,17 @@ Some helper functions to work with frames.
 Remap the window movement functions.
 
 #+begin_src elisp
-(keymap-set (current-global-map) "<remap> <windmove-left>" #'rh/windmove-left)
-(keymap-set (current-global-map) "<remap> <windmove-right>" #'rh/windmove-right)
+(keymap-set (current-global-map) "<remap> <windmove-left>" (cons "Window ⬅" #'rh/windmove-left))
+(keymap-set (current-global-map) "<remap> <evil-window-left>" (cons "Window ⬅" #'rh/windmove-left))
+(keymap-set (current-global-map) "<remap> <windmove-right>" (cons "Window ➡" #'rh/windmove-right))
+(keymap-set (current-global-map) "<remap> <evil-window-right>" (cons "Window ➡" #'rh/windmove-right))
 #+end_src
 
 And add other keybinds.
 
 #+begin_src elisp
-(keymap-set rh/leader-treesit-map "l" #'rh/select-frame-monitor-right)
-(keymap-set rh/leader-treesit-map "h" #'rh/select-frame-monitor-left)
+(keymap-set rh/leader-frame-map "l" (cons "Frame ⬅" #'rh/select-frame-monitor-right))
+(keymap-set rh/leader-frame-map "h" (cons "Frame ➡" #'rh/select-frame-monitor-left))
 #+end_src
 
 **** Appearance
@@ -2664,7 +2666,7 @@ Settings for the haskell menu.
 Firstly, it should open in a popup!
 
 #+begin_src elisp
-(after! haskell-mode
+(after! haskell-menu
   (set-popup-rule!
     (lambda (arg) (string-equal arg rh/haskell-menu-buffer-name))
     :size 6 :quit t :slot -1))

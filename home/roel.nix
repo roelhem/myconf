@@ -46,6 +46,7 @@
     nix-index.enable = true;
     ripgrep.enable = true;
     zsh.enable = true;
+    oh-my-posh.enable = true;
     emacs.enable = true;
     htop.enable = true;
     editorconfig.enable = true;
@@ -67,6 +68,35 @@
       github = {
         user = "roelhem";
       };
+    };
+  };
+
+  programs.oh-my-posh = {
+    settings = {
+      final_space = false;
+      version = 3;
+      iterm_features = [
+        "prompt_mark"
+        "current_dir"
+        "remote_host"
+      ];
+      blocks = [
+        {
+          type = "prompt";
+          alignment = "left";
+          segments = [
+            {
+              type = "path";
+              style = "powerline";
+              powerline_sympol = "";
+              foreground = "green";
+              properties = {
+                style = "folder";
+              };
+            }
+          ];
+        }
+      ];
     };
   };
 
